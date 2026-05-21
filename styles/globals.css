@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #__next {
+  height: 100%;
+}
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  @apply bg-white text-gray-900;
+}
+
+:root {
+  --obang-red: #C8272D;
+  --obang-blue: #1E4EA6;
+  --obang-yellow: #F5C400;
+  --obang-green: #1E7E3E;
+  --obang-purple: #5B2D8E;
+  --obang-white: #FFFFFF;
+}
+
+.text-obang-red { color: var(--obang-red); }
+.text-obang-blue { color: var(--obang-blue); }
+.text-obang-yellow { color: var(--obang-yellow); }
+.text-obang-green { color: var(--obang-green); }
+.text-obang-purple { color: var(--obang-purple); }
+
+.border-obang-blue { border-color: var(--obang-blue); }
+.border-obang-yellow { border-color: var(--obang-yellow); }
+
+.bg-obang-gradient-red-blue { background: linear-gradient(90deg, var(--obang-red), var(--obang-blue)); }
+.bg-obang-gradient-yellow-green { background: linear-gradient(90deg, var(--obang-yellow), var(--obang-green)); }
+
+.brand-gradient { background: #C8272D; }
+
+.btn-red-blue { @apply inline-flex items-center px-4 py-2 rounded-md text-white; background: #C8272D; }
+.btn-blue { @apply inline-flex items-center px-4 py-2 rounded-md text-white; background: #1E6BB8; }
+.btn-yellow { @apply inline-flex items-center px-4 py-2 rounded-md text-black; background: var(--obang-yellow); }
+.btn-green { @apply inline-flex items-center px-4 py-2 rounded-md text-white; background: var(--obang-green); }
+.btn-purple { @apply inline-flex items-center px-4 py-2 rounded-md text-white; background: var(--obang-purple); }
+
+/* Section accent backgrounds (subtle tints) */
+.accent-yellow-bg { background-color: rgba(245,196,0,0.06); }
+.accent-green-bg { background-color: rgba(30,126,62,0.06); }
+.accent-blue-bg { background-color: rgba(30,78,166,0.05); }
+.accent-purple-bg { background-color: rgba(91,45,142,0.05); }
+.accent-red-bg { background-color: rgba(200,39,45,0.05); }
+
+.brand-circle { background: #C8272D; }
+
+.logo-font { font-family: 'Black Han Sans', sans-serif; }
+
+/* Colorful border stripe - Korean traditional colors */
+.colorful-border-stripe {
+  display: flex;
+  width: 100%;
+  height: 30px;
+}
+
+.colorful-border-stripe__block {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: inherit;
+}
+
+.colorful-border-stripe__block::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/韓国伝統柄２.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: auto 100%;
+  opacity: 0.09;
+  pointer-events: none;
+}
+

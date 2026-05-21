@@ -1,0 +1,11 @@
+{"timestamp":"00:00:08.115","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:02:42.772","source":"Server","level":"LOG","message":"✓ Compiled in 2.6s"}
+{"timestamp":"00:02:43.450","source":"Server","level":"LOG","message":"✓ Compiled in 110ms"}
+{"timestamp":"01:41:56.131","source":"Server","level":"LOG","message":"✓ Compiled in 385ms"}
+{"timestamp":"01:59:38.520","source":"Server","level":"LOG","message":"✓ Compiled in 210ms"}
+{"timestamp":"02:53:14.593","source":"Server","level":"LOG","message":"✓ Compiled in 150ms"}
+{"timestamp":"02:57:54.436","source":"Server","level":"LOG","message":"✓ Compiled in 466ms"}
+{"timestamp":"03:01:16.593","source":"Server","level":"LOG","message":"✓ Compiled in 274ms"}
+{"timestamp":"03:41:07.871","source":"Server","level":"LOG","message":"✓ Compiled in 558ms"}
+{"timestamp":"04:20:05.655","source":"Server","level":"LOG","message":"✓ Compiled in 681ms"}
+{"timestamp":"04:20:14.609","source":"Server","level":"LOG","message":"✓ Compiled in 385ms"}
