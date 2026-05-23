@@ -15,13 +15,12 @@ export default function Home() {
       <main className="min-h-[70vh] flex items-center">
         <div className="max-w-5xl mx-auto px-6 py-20 grid grid-cols-1 md:grid-cols-2 gap-12">
           <section className="flex flex-col justify-center">
-            <h2 className="text-3xl font-bold text-[#C8272D] mb-2">電話韓国語 チグム</h2>
+            <h2 className="text-xl md:text-3xl font-bold text-[#C8272D] mb-2">電話韓国語 チグム</h2>
             <p className="text-sm uppercase tracking-[0.3em] text-[#A32D2D] mb-3">지금 시작해요！</p>
             <h1 className="text-xl font-extrabold mb-4">読むだけは、もう卒業。</h1>
             <p className="text-lg text-[#0C447C] mb-6">
-              <span className="block md:inline">いつか話せたらを、チグム（今）話せるに。</span>
-              <br className="hidden md:inline" />
-              <span className="block md:inline">さあ、チグムで話す部活、始めよう。</span>
+              いつか話せたらを、チグム（今）話せるに。<br />
+              さあ、チグムで話す部活、始めよう。
             </p>
             <div className="flex flex-col gap-4 mb-8">
               <a href="#contact" style={{ background: '#C8272D' }} className="px-6 py-3 rounded-md text-white">
