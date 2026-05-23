@@ -28,7 +28,9 @@ export default function Register() {
         <div className="max-w-5xl mx-auto px-6">
           <div className="mb-12 text-center">
             <p className="text-sm uppercase tracking-[0.3em] text-[#A32D2D] mb-4">지금 시작해요！</p>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-[#0C447C] mb-4">入部届を送って今すぐスタート</h1>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-[#0C447C] mb-4">
+              入部届を送って<br />今すぐスタート
+            </h1>
             <p className="text-base text-gray-600 max-w-2xl mx-auto">
               まずは無料の仮入部で、あなたの韓国語学習をチグム（今）から始めましょう。お好きな通話方法とコースを選んでください。
             </p>
