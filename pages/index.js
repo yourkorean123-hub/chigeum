@@ -23,13 +23,17 @@ export default function Home() {
               さあ、チグムで話す部活、始めよう。
             </p>
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-4 sm:space-y-0 mb-8">
-              <a href="#contact" style={{ background: '#C8272D', display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="text-center px-6 py-3 rounded-md text-white">
-                <span style={{ display: 'block' }} className="text-base font-semibold">入部届を送る</span>
-                <span style={{ display: 'block' }} className="text-xs opacity-90">（仮入部・無料）</span>
+              <a href="#contact" style={{ background: '#C8272D' }} className="px-6 py-3 rounded-md text-white">
+                <div className="flex flex-col items-center">
+                  <span className="text-base font-semibold">入部届を送る</span>
+                  <span className="text-sm opacity-90">（仮入部・無料）</span>
+                </div>
               </a>
-              <a href="#contact" style={{ background: '#1E6BB8', display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="text-center px-6 py-3 rounded-md text-white">
-                <span style={{ display: 'block' }} className="text-base font-semibold">まずは部活見学</span>
-                <span style={{ display: 'block' }} className="text-xs opacity-90">（無料体験）</span>
+              <a href="#contact" style={{ background: '#1E6BB8' }} className="px-6 py-3 rounded-md text-white">
+                <div className="flex flex-col items-center">
+                  <span className="text-base font-semibold">まずは部活見学</span>
+                  <span className="text-sm opacity-90">（無料体験）</span>
+                </div>
               </a>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

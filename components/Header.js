@@ -23,7 +23,7 @@ export default function Header() {
                 <span className="text-3xl font-semibold relative top-1">chi</span>
                 <span className="text-3xl font-semibold relative -top-1">geum</span>
               </div>
-              <p className="absolute text-[10px] text-black tracking-[0.1em] left-[110px] md:left-[85px] top-[2.6rem] md:top-[1.2rem]">
+              <p className="absolute text-[10px] text-black tracking-[0.1em] left-[110px] md:left-[85px] top-[2.6rem] md:top-[1.6rem]">
                 korean
               </p>
             </div>
