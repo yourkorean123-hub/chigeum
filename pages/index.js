@@ -223,7 +223,7 @@ export default function Home() {
 
       <section id="cta" className="py-12 bg-[#C8272D]">
         <div className="max-w-5xl mx-auto px-6 text-center">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch">
+          <div className="flex flex-col gap-4 justify-center items-stretch">
             <a className="bg-white text-[#C8272D] px-8 py-4 rounded-md font-semibold hover:opacity-90 transition border-2 border-white flex items-center justify-center" href="#contact">入部届を送る（仮入部・無料）</a>
             <a className="bg-blue-500 text-white px-8 py-4 rounded-md font-semibold hover:bg-blue-600 transition flex items-center justify-center" href="#contact">まずは部活見学（無料体験）</a>
           </div>
