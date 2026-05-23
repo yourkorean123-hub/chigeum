@@ -24,12 +24,12 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-4 sm:space-y-0 mb-8">
               <a className="flex flex-col items-center text-center px-6 py-3 rounded-md text-white" style={{ background: '#C8272D' }} href="#contact">
-                <span className="text-base font-semibold">入部届を送る</span>
-                <span className="text-xs opacity-90">（仮入部・無料）</span>
+                <span className="block text-base font-semibold">入部届を送る</span>
+                <span className="block text-xs opacity-90">（仮入部・無料）</span>
               </a>
               <a className="flex flex-col items-center text-center px-6 py-3 rounded-md text-white" style={{ background: '#1E6BB8' }} href="#contact">
-                <span className="text-base font-semibold">まずは部活見学</span>
-                <span className="text-xs opacity-90">（無料体験）</span>
+                <span className="block text-base font-semibold">まずは部活見学</span>
+                <span className="block text-xs opacity-90">（無料体験）</span>
               </a>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
