@@ -25,7 +25,7 @@ export default function Header() {
               </div>
               <p
                 className="text-[10px] text-black tracking-[0.1em]"
-                style={{ position: 'absolute', left: '90px', top: '2.6rem' }}
+                style={{ position: 'absolute', left: '110px', top: '2.6rem' }}
               >
                 korean
               </p>

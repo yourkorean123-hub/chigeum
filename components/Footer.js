@@ -2,7 +2,7 @@ export default function Footer() {
   return (
     <>
       <footer className="w-full border-t mt-12" style={{borderColor: 'rgba(91,45,142,0.12)'}}>
-        <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-gray-700">
+        <div className="max-w-5xl mx-auto px-6 py-8 text-xs text-gray-700">
           <div className="flex justify-between items-center">
             <div className="text-obang-blue">© {new Date().getFullYear()} 電話韓国語 チグム</div>
             <div className="space-x-4">
