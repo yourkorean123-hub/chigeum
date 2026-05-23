@@ -19,8 +19,9 @@ export default function Home() {
             <p className="text-sm uppercase tracking-[0.3em] text-[#A32D2D] mb-3">지금 시작해요！</p>
             <h1 className="text-xl font-extrabold mb-4">読むだけは、もう卒業。</h1>
             <p className="text-lg text-[#0C447C] mb-6">
-              いつか話せたらを、チグム（今）話せるに。<br />
-              さあ、チグムで話す部活、始めよう。
+              <span className="block md:inline">いつか話せたらを、チグム（今）話せるに。</span>
+              <br className="hidden md:inline" />
+              <span className="block md:inline">さあ、チグムで話す部活、始めよう。</span>
             </p>
             <div className="flex flex-col gap-4 mb-8">
               <a href="#contact" style={{ background: '#C8272D' }} className="px-6 py-3 rounded-md text-white">
