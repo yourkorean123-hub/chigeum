@@ -22,7 +22,7 @@ export default function Home() {
               いつか話せたらを、チグム（今）話せるに。<br />
               さあ、チグムで話す部活、始めよう。
             </p>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-4 sm:space-y-0 mb-8">
+            <div className="flex flex-col gap-4 mb-8">
               <a href="#contact" style={{ background: '#C8272D' }} className="px-6 py-3 rounded-md text-white">
                 <div className="flex flex-col items-center">
                   <span className="text-base font-semibold">入部届を送る</span>
