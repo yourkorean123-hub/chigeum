@@ -17,7 +17,7 @@ export default function Home() {
           <section className="flex flex-col justify-center">
             <h2 className="text-3xl font-bold text-[#C8272D] mb-2">電話韓国語</h2>
             <p className="text-sm uppercase tracking-[0.3em] text-[#A32D2D] mb-3">지금 시작해요！</p>
-            <h1 className="text-xl md:text-2xl font-extrabold mb-4">読むだけは、もう卒業。</h1>
+            <h1 className="text-xl font-extrabold mb-4">読むだけは、もう卒業。</h1>
             <p className="text-lg text-[#0C447C] mb-6">
               いつか話せたらを、チグム（今）話せるに。<br />
               さあ、チグムで話す部活、始めよう。
