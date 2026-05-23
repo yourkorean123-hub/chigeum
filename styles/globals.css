@@ -7,7 +7,7 @@ html, body, #__next {
 }
 
 body {
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif;
   @apply bg-white text-gray-900;
 }
 
