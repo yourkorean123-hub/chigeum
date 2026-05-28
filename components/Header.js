@@ -18,14 +18,12 @@ export default function Header() {
       <header className="w-full bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="text-obang-red logo-font">
-            <div className="relative flex flex-col justify-center gap-0 leading-none">
-              <div className="flex items-center gap-1">
-                <span className="text-3xl font-bold relative top-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>chi</span>
-                <span className="text-3xl font-bold relative -top-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>gum</span>
+            <div className="flex items-center gap-1 leading-none">
+              <span className="text-5xl font-bold relative top-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>chi</span>
+              <div className="flex flex-col">
+                <span className="text-5xl font-bold" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>gum</span>
+                <p className="text-[10px] text-black tracking-[0.1em] mt-0.5">korean</p>
               </div>
-              <p className="absolute text-[10px] text-black tracking-[0.1em] left-[110px] md:left-[85px] top-[2.6rem] md:top-[1.6rem]">
-                korean
-              </p>
             </div>
           </Link>
 
