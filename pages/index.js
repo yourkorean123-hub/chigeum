@@ -21,7 +21,7 @@ export default function Home() {
             <p className="text-lg text-[#0C447C] mb-1">いつか話せたらを、チグム（今）話せるに。</p>
             <p className="text-lg text-[#0C447C] mb-6">さあ、チグムで話す部活、始めよう。</p>
             <div className="flex flex-col gap-4 mb-8">
-              <a href="#contact" style={{ background: '#C8272D' }} className="px-6 py-3 rounded-md text-white">
+              <a href="/register" style={{ background: '#C8272D' }} className="px-6 py-3 rounded-md text-white">
                 <div className="flex flex-col items-center">
                   <span className="text-base font-semibold">入部届を送る</span>
                   <span className="text-sm opacity-90">（仮入部・無料）</span>
