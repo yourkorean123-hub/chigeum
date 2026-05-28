@@ -21,7 +21,7 @@ export default function Header() {
             <div className="relative flex flex-col justify-center gap-0 leading-none">
               <div className="flex items-center gap-1">
                 <span className="text-3xl font-semibold relative top-1">chi</span>
-                <span className="text-3xl font-semibold relative -top-1">geum</span>
+                <span className="text-3xl font-semibold relative -top-1">gum</span>
               </div>
               <p className="absolute text-[10px] text-black tracking-[0.1em] left-[110px] md:left-[85px] top-[2.6rem] md:top-[1.6rem]">
                 korean
