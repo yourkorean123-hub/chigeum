@@ -1,14 +1,14 @@
-import { useState } from 'react'
+import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 
 export default function Contact() {
-  const [submitted, setSubmitted] = useState(false)
+  const router = useRouter()
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    setSubmitted(true)
+    router.push('/contact/complete')
   }
 
   return (
@@ -31,17 +31,6 @@ export default function Contact() {
           </div>
 
           <div className="rounded-3xl bg-white p-8 shadow-lg border border-[#E5E7EB]">
-            {submitted ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-[#C8272D]/10 flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-[#C8272D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <p className="text-lg font-semibold text-[#0C447C]">送信が完了しました。</p>
-                <p className="text-gray-600 mt-2">内容を確認の上、担当者よりご連絡いたします。</p>
-              </div>
-            ) : (
               <form className="space-y-6" onSubmit={handleSubmit}>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="name">
@@ -89,7 +78,6 @@ export default function Contact() {
                   送信する
                 </button>
               </form>
-            )}
           </div>
         </div>
       </main>
