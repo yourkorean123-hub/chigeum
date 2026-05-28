@@ -27,10 +27,9 @@ export default function Home() {
                   <span className="text-sm opacity-90">（仮入部・無料）</span>
                 </div>
               </a>
-              <a href="#contact" style={{ background: '#1E6BB8' }} className="px-6 py-3 rounded-md text-white">
+              <a href="https://utage-system.com/p/D6MRCPkR1lZy" style={{ background: '#1E6BB8' }} className="px-6 py-3 rounded-md text-white">
                 <div className="flex flex-col items-center">
-                  <span className="text-base font-semibold">まずは部活見学</span>
-                  <span className="text-sm opacity-90">（無料体験）</span>
+                  <span className="text-base font-semibold">仮入部する</span>
                 </div>
               </a>
             </div>

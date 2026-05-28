@@ -35,7 +35,7 @@ export default function Header() {
             <a className="text-obang-blue hover:text-obang-red" href="#coach">コーチ</a>
             <a className="text-obang-blue hover:text-obang-red" href="#materials">教材</a>
             <a className="text-obang-blue hover:text-obang-red" href="#testimonials">部員の声</a>
-            <a className="ml-4 btn-red-blue" href="/register">仮入部する</a>
+            <a className="ml-4 btn-red-blue" href="/register">入部する</a>
           </nav>
 
           {/* ハンバーガーボタン（スマホのみ） */}
@@ -57,7 +57,7 @@ export default function Header() {
             <a className="text-obang-blue hover:text-obang-red text-base" href="#coach" onClick={() => setIsOpen(false)}>コーチ</a>
             <a className="text-obang-blue hover:text-obang-red text-base" href="#materials" onClick={() => setIsOpen(false)}>教材</a>
             <a className="text-obang-blue hover:text-obang-red text-base" href="#testimonials" onClick={() => setIsOpen(false)}>部員の声</a>
-            <a className="btn-red-blue inline-block text-center" href="/register" onClick={() => setIsOpen(false)}>仮入部する</a>
+            <a className="btn-red-blue inline-block text-center" href="/register" onClick={() => setIsOpen(false)}>入部する</a>
           </nav>
         )}
       </header>
