@@ -20,8 +20,8 @@ export default function Header() {
           <Link href="/" className="text-obang-red logo-font">
             <div className="relative flex flex-col justify-center gap-0 leading-none">
               <div className="flex items-center gap-1">
-                <span className="text-3xl font-semibold relative top-1">chi</span>
-                <span className="text-3xl font-semibold relative -top-1">gum</span>
+                <span className="text-3xl font-bold relative top-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>chi</span>
+                <span className="text-3xl font-bold relative -top-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>gum</span>
               </div>
               <p className="absolute text-[10px] text-black tracking-[0.1em] left-[110px] md:left-[85px] top-[2.6rem] md:top-[1.6rem]">
                 korean
