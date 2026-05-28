@@ -8,7 +8,7 @@ export default function Footer() {
             <div className="flex gap-3 whitespace-nowrap">
               <a className="hover:text-obang-blue" href="#">利用規約</a>
               <a className="hover:text-obang-blue" href="#">プライバシー</a>
-              <a className="hover:text-obang-blue" href="#contact">お問い合わせ</a>
+              <a className="hover:text-obang-blue" href="/contact">お問い合わせ</a>
             </div>
           </div>
         </div>
