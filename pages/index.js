@@ -221,16 +221,15 @@ export default function Home() {
       <section id="cta" className="py-12 bg-[#C8272D]">
         <div className="max-w-5xl mx-auto px-6 text-center">
           <div className="flex flex-col gap-4 justify-center items-center">
-            <a className="max-w-xs w-full bg-white text-[#C8272D] px-8 py-4 rounded-md font-semibold hover:opacity-90 transition border-2 border-white" href="#contact">
+            <a className="max-w-xs w-full bg-white text-[#C8272D] px-8 py-4 rounded-md font-semibold hover:opacity-90 transition border-2 border-white" href="/register">
               <div className="flex flex-col items-center">
                 <span className="text-base font-semibold">入部届を送る</span>
                 <span className="text-sm opacity-90">（仮入部・無料）</span>
               </div>
             </a>
-            <a className="max-w-xs w-full bg-blue-500 text-white px-8 py-4 rounded-md font-semibold hover:bg-blue-600 transition" href="#contact">
+            <a className="max-w-xs w-full bg-blue-500 text-white px-8 py-4 rounded-md font-semibold hover:bg-blue-600 transition" href="https://utage-system.com/p/D6MRCPkR1lZy">
               <div className="flex flex-col items-center">
-                <span className="text-base font-semibold">まずは部活見学</span>
-                <span className="text-sm opacity-90">（無料体験）</span>
+                <span className="text-base font-semibold">仮入部する</span>
               </div>
             </a>
           </div>
