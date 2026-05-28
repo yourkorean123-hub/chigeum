@@ -22,7 +22,7 @@ export default function Header() {
               <span className="text-5xl font-bold relative top-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>chi</span>
               <div className="flex flex-col">
                 <span className="text-5xl font-bold" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>gum</span>
-                <p className="text-[10px] text-black tracking-[0.1em] font-bold mt-0 ml-1">korean</p>
+                <p className="text-[10px] text-black tracking-[0.1em] font-bold -mt-1 ml-2">korean</p>
               </div>
             </div>
           </Link>
