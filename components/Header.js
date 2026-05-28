@@ -19,7 +19,7 @@ export default function Header() {
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="text-obang-red logo-font">
             <div className="flex items-center gap-1 leading-none">
-              <span className="text-6xl font-bold relative top-1" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>chi</span>
+              <span className="text-6xl font-bold relative top-1" style={{ fontFamily: "'Bebas Neue', sans-serif", transform: 'rotate(-15deg)' }}>chi</span>
               <div className="flex flex-col">
                 <span className="text-4xl font-bold" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>gum</span>
                 <p className="text-[10px] text-black tracking-[0.1em] font-bold -mt-[6px] ml-[11px]">korean</p>
