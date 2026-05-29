@@ -78,29 +78,17 @@ export default function Home() {
               その理由に、気づいていますか？
             </p>
             <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-4 px-2">
-                <p className="font-bold text-base">
-                  <span className="text-[#0C447C]">読む</span>
-                  <span className="text-gray-900">より、</span>
-                  <span className="text-[#A32D2D]">聞く</span>
-                  <span className="text-gray-900">。</span>
-                </p>
+              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-2">
+                <p className="text-sm font-semibold text-[#0C447C] mb-1">読むより、</p>
+                <p className="text-2xl font-extrabold text-[#A32D2D]">聞く。</p>
               </div>
-              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-4 px-2">
-                <p className="font-bold text-base">
-                  <span className="text-[#0C447C]">書く</span>
-                  <span className="text-gray-900">より、</span>
-                  <span className="text-[#A32D2D]">話す</span>
-                  <span className="text-gray-900">。</span>
-                </p>
+              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-2">
+                <p className="text-sm font-semibold text-[#0C447C] mb-1">書くより、</p>
+                <p className="text-2xl font-extrabold text-[#A32D2D]">話す。</p>
               </div>
-              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-4 px-2">
-                <p className="font-bold text-base">
-                  <span className="text-[#0C447C]">覚える</span>
-                  <span className="text-gray-900">より、</span>
-                  <span className="text-[#A32D2D]">使う</span>
-                  <span className="text-gray-900">。</span>
-                </p>
+              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-2">
+                <p className="text-sm font-semibold text-[#0C447C] mb-1">覚えるより、</p>
+                <p className="text-2xl font-extrabold text-[#A32D2D]">使う。</p>
               </div>
             </div>
             <p className="text-gray-700 text-lg leading-relaxed">
