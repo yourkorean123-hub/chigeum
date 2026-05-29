@@ -79,16 +79,16 @@ export default function Home() {
             </p>
             <div className="grid grid-cols-3 gap-4">
               <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-3">
-                <p className="text-sm font-semibold mb-1 text-center"><span className="text-[#0C447C]">読む</span><span className="text-gray-900">より</span></p>
-                <p className="text-2xl font-extrabold text-[#A32D2D] text-center" style={{ paddingLeft: '20px' }}>聞く</p>
+                <p className="text-sm font-semibold mb-1 text-center" style={{ paddingRight: '30px' }}><span className="text-[#0C447C]">読む</span><span className="text-gray-900">より</span></p>
+                <p className="text-2xl font-extrabold text-[#A32D2D] text-center" style={{ paddingLeft: '30px' }}>聞く</p>
               </div>
               <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-3">
-                <p className="text-sm font-semibold mb-1 text-center"><span className="text-[#0C447C]">書く</span><span className="text-gray-900">より</span></p>
-                <p className="text-2xl font-extrabold text-[#A32D2D] text-center" style={{ paddingLeft: '20px' }}>話す</p>
+                <p className="text-sm font-semibold mb-1 text-center" style={{ paddingRight: '30px' }}><span className="text-[#0C447C]">書く</span><span className="text-gray-900">より</span></p>
+                <p className="text-2xl font-extrabold text-[#A32D2D] text-center" style={{ paddingLeft: '30px' }}>話す</p>
               </div>
               <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-3">
-                <p className="text-sm font-semibold mb-1 text-center"><span className="text-[#0C447C]">覚える</span><span className="text-gray-900">より</span></p>
-                <p className="text-2xl font-extrabold text-[#A32D2D] text-center" style={{ paddingLeft: '20px' }}>使う</p>
+                <p className="text-sm font-semibold mb-1 text-center" style={{ paddingRight: '30px' }}><span className="text-[#0C447C]">覚える</span><span className="text-gray-900">より</span></p>
+                <p className="text-2xl font-extrabold text-[#A32D2D] text-center" style={{ paddingLeft: '30px' }}>使う</p>
               </div>
             </div>
             <p className="text-gray-700 text-lg leading-relaxed">
