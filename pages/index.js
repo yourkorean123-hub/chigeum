@@ -69,21 +69,33 @@ export default function Home() {
       </main>
 
       <section id="features" className="py-12 bg-gray-50">
-        <div className="max-w-5xl mx-auto px-6">
-          <h2 className="text-2xl font-bold mb-6">チグムの特徴</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="p-6 bg-white rounded-lg shadow-sm">
-              <h3 className="font-semibold mb-2">気軽に始められる</h3>
-              <p className="text-sm text-gray-600">顔出し不要で電話かLINEで受講できます。</p>
+        <div className="max-w-3xl mx-auto px-6 text-center">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-[#0C447C] mb-10">なぜ多くの人が韓国語を話せないのか？</h2>
+          <div className="rounded-3xl bg-white p-8 md:p-12 shadow-lg border border-[#E5E7EB] space-y-8">
+            <p className="text-gray-700 text-lg leading-relaxed">
+              読み書きを頑張ってきたのに、<br />
+              なぜか話せない。<br />
+              その理由に、気づいていますか？
+            </p>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-4 px-2">
+                <p className="text-[#C8272D] font-bold text-base mb-1">読む より</p>
+                <p className="text-[#0C447C] font-extrabold text-lg">聞く</p>
+              </div>
+              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-4 px-2">
+                <p className="text-[#C8272D] font-bold text-base mb-1">書く より</p>
+                <p className="text-[#0C447C] font-extrabold text-lg">話す</p>
+              </div>
+              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-4 px-2">
+                <p className="text-[#C8272D] font-bold text-base mb-1">覚える より</p>
+                <p className="text-[#0C447C] font-extrabold text-lg">使う</p>
+              </div>
             </div>
-            <div className="p-6 bg-white rounded-lg shadow-sm">
-              <h3 className="font-semibold mb-2">話す機会を最大化</h3>
-              <p className="text-sm text-gray-600">アウトプット中心のレッスン設計。</p>
-            </div>
-            <div className="p-6 bg-white rounded-lg shadow-sm">
-              <h3 className="font-semibold mb-2">日本語サポートあり</h3>
-              <p className="text-sm text-gray-600">初級者でも安心の日本語サポート。</p>
-            </div>
+            <p className="text-gray-700 text-lg leading-relaxed">
+              チグムは最初から<br />
+              聞く力と話す力を同時に鍛えます。<br />
+              <span className="font-bold text-[#C8272D]">だから、話せるようになる。</span>
+            </p>
           </div>
         </div>
       </section>
