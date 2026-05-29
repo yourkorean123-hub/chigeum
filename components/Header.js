@@ -1,8 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { supabase } from '../lib/supabaseClient'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   return (
     <>
@@ -34,6 +46,11 @@ export default function Header() {
             <a className="text-obang-blue hover:text-obang-red" href="#materials">教材</a>
             <a className="text-obang-blue hover:text-obang-red" href="#testimonials">部員の声</a>
             <a className="text-obang-blue hover:text-obang-red" href="/contact">お問い合わせ</a>
+            {user ? (
+              <a className="text-obang-blue hover:text-obang-red" href="/mypage">マイページ</a>
+            ) : (
+              <a className="text-obang-blue hover:text-obang-red" href="/login">ログイン</a>
+            )}
             <a className="ml-4 btn-red-blue" href="/register">入部する</a>
           </nav>
 
@@ -57,6 +74,11 @@ export default function Header() {
             <a className="text-obang-blue hover:text-obang-red text-base" href="#materials" onClick={() => setIsOpen(false)}>教材</a>
             <a className="text-obang-blue hover:text-obang-red text-base" href="#testimonials" onClick={() => setIsOpen(false)}>部員の声</a>
             <a className="text-obang-blue hover:text-obang-red text-base" href="/contact" onClick={() => setIsOpen(false)}>お問い合わせ</a>
+            {user ? (
+              <a className="text-obang-blue hover:text-obang-red text-base" href="/mypage" onClick={() => setIsOpen(false)}>マイページ</a>
+            ) : (
+              <a className="text-obang-blue hover:text-obang-red text-base" href="/login" onClick={() => setIsOpen(false)}>ログイン</a>
+            )}
             <a className="btn-red-blue inline-block text-center" href="/register" onClick={() => setIsOpen(false)}>入部する</a>
           </nav>
         )}

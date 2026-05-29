@@ -9,6 +9,7 @@
     "deploy": "git add . && git commit -m 'update' && git push"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
     "next": "16.2.6",
     "react": "18.2.0",
     "react-dom": "18.2.0"
