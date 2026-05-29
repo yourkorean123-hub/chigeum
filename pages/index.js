@@ -77,18 +77,18 @@ export default function Home() {
               なぜか話せない。<br />
               その理由に、気づいていますか？
             </p>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-2">
-                <p className="text-sm font-semibold text-[#0C447C] mb-1">読むより、</p>
-                <p className="text-2xl font-extrabold text-[#A32D2D]">聞く。</p>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-3">
+                <p className="text-sm font-semibold text-[#0C447C] mb-1 text-left">読むより</p>
+                <p className="text-2xl font-extrabold text-[#A32D2D] text-right">聞く</p>
               </div>
-              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-2">
-                <p className="text-sm font-semibold text-[#0C447C] mb-1">書くより、</p>
-                <p className="text-2xl font-extrabold text-[#A32D2D]">話す。</p>
+              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-3">
+                <p className="text-sm font-semibold text-[#0C447C] mb-1 text-left">書くより</p>
+                <p className="text-2xl font-extrabold text-[#A32D2D] text-right">話す</p>
               </div>
-              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-2">
-                <p className="text-sm font-semibold text-[#0C447C] mb-1">覚えるより、</p>
-                <p className="text-2xl font-extrabold text-[#A32D2D]">使う。</p>
+              <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-3">
+                <p className="text-sm font-semibold text-[#0C447C] mb-1 text-left">覚えるより</p>
+                <p className="text-2xl font-extrabold text-[#A32D2D] text-right">使う</p>
               </div>
             </div>
             <p className="text-gray-700 text-lg leading-relaxed">
