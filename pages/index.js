@@ -79,16 +79,28 @@ export default function Home() {
             </p>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-4 px-2">
-                <p className="text-[#C8272D] font-bold text-base mb-1">読む より</p>
-                <p className="text-[#0C447C] font-extrabold text-lg">聞く</p>
+                <p className="font-bold text-base">
+                  <span className="text-[#0C447C]">読む</span>
+                  <span className="text-gray-900">より、</span>
+                  <span className="text-[#A32D2D]">聞く</span>
+                  <span className="text-gray-900">。</span>
+                </p>
               </div>
               <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-4 px-2">
-                <p className="text-[#C8272D] font-bold text-base mb-1">書く より</p>
-                <p className="text-[#0C447C] font-extrabold text-lg">話す</p>
+                <p className="font-bold text-base">
+                  <span className="text-[#0C447C]">書く</span>
+                  <span className="text-gray-900">より、</span>
+                  <span className="text-[#A32D2D]">話す</span>
+                  <span className="text-gray-900">。</span>
+                </p>
               </div>
               <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-4 px-2">
-                <p className="text-[#C8272D] font-bold text-base mb-1">覚える より</p>
-                <p className="text-[#0C447C] font-extrabold text-lg">使う</p>
+                <p className="font-bold text-base">
+                  <span className="text-[#0C447C]">覚える</span>
+                  <span className="text-gray-900">より、</span>
+                  <span className="text-[#A32D2D]">使う</span>
+                  <span className="text-gray-900">。</span>
+                </p>
               </div>
             </div>
             <p className="text-gray-700 text-lg leading-relaxed">
