@@ -195,18 +195,33 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-6">
             <div className="p-6 bg-white rounded-lg shadow-sm">
               <div className="text-yellow-400 text-lg mb-2">★★★★★</div>
-              <p>短時間で話せるようになった！</p>
+              <p className="text-sm text-gray-800">あっという間の時間で、楽しかったです。先生がすごく褒めてくださるので、気落ちすることなくお話させて頂きました。</p>
               <div className="text-sm text-gray-600 mt-3">30代・会社員（東京）</div>
             </div>
             <div className="p-6 bg-white rounded-lg shadow-sm">
               <div className="text-yellow-400 text-lg mb-2">★★★★★</div>
-              <p>顔出し不要がありがたい。</p>
-              <div className="text-sm text-gray-600 mt-3">20代・営業（大阪）</div>
+              <p className="text-sm text-gray-800">楽しかったです！合ってるかな。。これでいいかな。。とどうしても考えちゃうので止まっちゃいますが、これは慣れていかないと仕方ないかなと。先生が親切なので、楽しいです。</p>
+              <div className="text-sm text-gray-600 mt-3">40代・主婦（大阪）</div>
             </div>
             <div className="p-6 bg-white rounded-lg shadow-sm">
               <div className="text-yellow-400 text-lg mb-2">★★★★★</div>
-              <p>先生が親切で続けやすい。</p>
-              <div className="text-sm text-gray-600 mt-3">40代・主婦（福岡）</div>
+              <p className="text-sm text-gray-800">へジョンコーチ大好きなので頑張ります！</p>
+              <div className="text-sm text-gray-600 mt-3">20代・学生（福岡）</div>
+            </div>
+            <div className="p-6 bg-white rounded-lg shadow-sm">
+              <div className="text-yellow-400 text-lg mb-2">★★★★★</div>
+              <p className="text-sm text-gray-800">楽しいです！続けたい✨ 韓国語で話す時間が長いと、とても楽しいです（20分体験者）</p>
+              <div className="text-sm text-gray-600 mt-3">30代・会社員（神奈川）</div>
+            </div>
+            <div className="p-6 bg-white rounded-lg shadow-sm">
+              <div className="text-yellow-400 text-lg mb-2">★★★★★</div>
+              <p className="text-sm text-gray-800">はじめは緊張して聞き取れないところが多々あったし、ど忘れして返答できなかったりもしましたが、だんだん慣れてきて話せてきました✨</p>
+              <div className="text-sm text-gray-600 mt-3">40代・主婦（愛知）</div>
+            </div>
+            <div className="p-6 bg-white rounded-lg shadow-sm">
+              <div className="text-yellow-400 text-lg mb-2">★★★★★</div>
+              <p className="text-sm text-gray-800">やっぱり会話する機会を作って話していくってすっごく大事なんだな～って痛感してます！最初の緊張がなくなってきて話せるようになってきました＾＾</p>
+              <div className="text-sm text-gray-600 mt-3">50代・主婦（東京）</div>
             </div>
           </div>
         </div>
