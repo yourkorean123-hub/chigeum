@@ -3,5 +3,13 @@
   "/_app": "pages/_app.js",
   "/_document": "pages/_document.js",
   "/_error": "pages/_error.js",
+  "/coach-recruit": "pages/coach-recruit.html",
+  "/contact": "pages/contact.html",
+  "/contact/complete": "pages/contact/complete.html",
+  "/dashboard/student": "pages/dashboard/student.html",
+  "/login": "pages/login.html",
+  "/mypage": "pages/mypage.html",
+  "/register": "pages/register.html",
+  "/register/complete": "pages/register/complete.html",
   "/404": "pages/404.html"
 }

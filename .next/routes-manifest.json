@@ -28,6 +28,54 @@
       "regex": "^/(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/coach-recruit",
+      "regex": "^/coach\\-recruit(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/coach\\-recruit(?:/)?$"
+    },
+    {
+      "page": "/contact",
+      "regex": "^/contact(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/contact(?:/)?$"
+    },
+    {
+      "page": "/contact/complete",
+      "regex": "^/contact/complete(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/contact/complete(?:/)?$"
+    },
+    {
+      "page": "/dashboard/student",
+      "regex": "^/dashboard/student(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/student(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/mypage",
+      "regex": "^/mypage(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/mypage(?:/)?$"
+    },
+    {
+      "page": "/register",
+      "regex": "^/register(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/register(?:/)?$"
+    },
+    {
+      "page": "/register/complete",
+      "regex": "^/register/complete(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/register/complete(?:/)?$"
     }
   ],
   "dataRoutes": [],
