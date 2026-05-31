@@ -10,18 +10,11 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [debugInfo, setDebugInfo] = useState(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    setDebugInfo({
-      url: url ? `${url.slice(0, 30)}...` : '❌ UNDEFINED',
-      key: key ? `${key.slice(0, 20)}...` : '❌ UNDEFINED',
-    })
-    console.log('[Supabase] URL:', url || 'UNDEFINED')
-    console.log('[Supabase] KEY:', key ? key.slice(0, 20) + '...' : 'UNDEFINED')
+    console.log('[Supabase] URL:', process.env.NEXT_PUBLIC_SUPABASE_URL || 'UNDEFINED')
+    console.log('[Supabase] KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'UNDEFINED')
   }, [])
 
   const handleSubmit = async (e) => {
@@ -74,12 +67,6 @@ export default function Login() {
           </div>
 
           <div className="rounded-3xl bg-white p-8 shadow-lg border border-[#E5E7EB]">
-            {debugInfo && (
-              <div className="mb-4 rounded-2xl bg-gray-50 border border-gray-200 px-4 py-3 text-xs text-gray-500 font-mono">
-                <p>URL: {debugInfo.url}</p>
-                <p>KEY: {debugInfo.key}</p>
-              </div>
-            )}
             {error && (
               <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 break-all">
                 {error}
