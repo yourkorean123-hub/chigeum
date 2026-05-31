@@ -23,7 +23,7 @@ export default function Login() {
       setError('メールアドレスまたはパスワードが正しくありません。')
       setLoading(false)
     } else {
-      router.push('/mypage')
+      router.push('/dashboard/student')
     }
   }
 
