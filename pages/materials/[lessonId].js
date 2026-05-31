@@ -259,8 +259,9 @@ export default function LessonDetail() {
                             {ex.q}
                           </p>
                           {revealed[i] ? (
-                            <div className="bg-[#A32D2D]/5 border border-[#A32D2D]/20 rounded-xl px-4 py-3">
-                              <p className="text-lg font-bold text-[#A32D2D]">{ex.a}</p>
+                            <div className="bg-[#A32D2D]/5 border border-[#A32D2D]/20 rounded-xl px-4 py-3 flex items-center gap-3">
+                              <p className="text-lg font-bold text-[#A32D2D] flex-1">{ex.a}</p>
+                              <SpeakButton text={ex.a} id={`ex-${i}`} speakingId={speakingId} onSpeak={speak} />
                             </div>
                           ) : (
                             <button
