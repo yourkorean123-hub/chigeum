@@ -157,13 +157,18 @@ export default function CoachDashboard() {
   const [reviewTarget, setReviewTarget] = useState(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         router.push('/login')
         return
       }
-      const role = session.user.app_metadata?.role || session.user.user_metadata?.role
-      if (role !== 'coach') {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profile?.role !== 'coach') {
         router.push('/dashboard/student')
         return
       }
