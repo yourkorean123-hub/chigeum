@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
@@ -84,12 +84,58 @@ const TABS = [
   { id: 'point',    label: 'ポイント解説', icon: '💡' },
 ]
 
+// ─── 音声読み上げフック ────────────────────────────────────────
+function useSpeech() {
+  const [speakingId, setSpeakingId] = useState(null)
+  const utterRef = useRef(null)
+
+  const speak = useCallback((text, id) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return
+    if (speakingId === id) {
+      window.speechSynthesis.cancel()
+      setSpeakingId(null)
+      return
+    }
+    window.speechSynthesis.cancel()
+    const utter = new SpeechSynthesisUtterance(text)
+    utter.lang = 'ko-KR'
+    utter.rate = 0.9
+    utter.onstart = () => setSpeakingId(id)
+    utter.onend = () => setSpeakingId(null)
+    utter.onerror = () => setSpeakingId(null)
+    utterRef.current = utter
+    window.speechSynthesis.speak(utter)
+  }, [speakingId])
+
+  useEffect(() => () => window.speechSynthesis?.cancel(), [])
+
+  return { speakingId, speak }
+}
+
+function SpeakButton({ text, id, speakingId, onSpeak }) {
+  const isPlaying = speakingId === id
+  return (
+    <button
+      onClick={() => onSpeak(text, id)}
+      title={isPlaying ? '停止' : '読み上げ'}
+      className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm transition
+        ${isPlaying
+          ? 'bg-[#A32D2D] text-white shadow-sm scale-110'
+          : 'bg-gray-100 text-gray-500 hover:bg-[#A32D2D]/10 hover:text-[#A32D2D]'
+        }`}
+    >
+      {isPlaying ? '■' : '🔊'}
+    </button>
+  )
+}
+
 export default function LessonDetail() {
   const router = useRouter()
   const { lessonId } = router.query
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('key')
   const [revealed, setRevealed] = useState({})
+  const { speakingId, speak } = useSpeech()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -151,7 +197,10 @@ export default function LessonDetail() {
                     <h2 className="text-base font-bold text-[#0C447C] mb-4">今日のキーフレーズ</h2>
                     {lesson.keyPhrases.map((p, i) => (
                       <div key={i} className="rounded-2xl bg-[#A32D2D]/5 border border-[#A32D2D]/15 px-5 py-4">
-                        <p className="text-xl font-bold text-[#A32D2D] mb-1">{p.kr}</p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-xl font-bold text-[#A32D2D] flex-1">{p.kr}</p>
+                          <SpeakButton text={p.kr} id={`key-${i}`} speakingId={speakingId} onSpeak={speak} />
+                        </div>
                         <p className="text-sm text-gray-500 mb-0.5">{p.romanize}</p>
                         <p className="text-sm font-semibold text-gray-700">{p.jp}</p>
                       </div>
@@ -165,7 +214,8 @@ export default function LessonDetail() {
                     <div className="divide-y divide-gray-100">
                       {lesson.vocabulary.map((v, i) => (
                         <div key={i} className="flex items-center justify-between py-3">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <SpeakButton text={v.kr} id={`vocab-${i}`} speakingId={speakingId} onSpeak={speak} />
                             <span className="text-base font-bold text-[#A32D2D]">{v.kr}</span>
                             <span className="text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{v.pos}</span>
                           </div>
@@ -186,7 +236,10 @@ export default function LessonDetail() {
                             {line.speaker}
                           </div>
                           <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${line.speaker === 'A' ? 'bg-[#0C447C]/5 border border-[#0C447C]/15' : 'bg-[#A32D2D]/5 border border-[#A32D2D]/15'}`}>
-                            <p className="text-base font-semibold text-gray-800">{line.kr}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-base font-semibold text-gray-800 flex-1">{line.kr}</p>
+                              <SpeakButton text={line.kr} id={`conv-${i}`} speakingId={speakingId} onSpeak={speak} />
+                            </div>
                             <p className="text-xs text-gray-500 mt-0.5">{line.jp}</p>
                           </div>
                         </div>
