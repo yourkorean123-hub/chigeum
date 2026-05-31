@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Header from '../components/Header'
@@ -10,26 +10,45 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [debugInfo, setDebugInfo] = useState(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    setDebugInfo({
+      url: url ? `${url.slice(0, 30)}...` : '❌ UNDEFINED',
+      key: key ? `${key.slice(0, 20)}...` : '❌ UNDEFINED',
+    })
+    console.log('[Supabase] URL:', url || 'UNDEFINED')
+    console.log('[Supabase] KEY:', key ? key.slice(0, 20) + '...' : 'UNDEFINED')
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
+    console.log('[Login] Attempting signInWithPassword...')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
+    console.log('[Login] Result:', { data, error })
+
     if (error) {
-      setError('メールアドレスまたはパスワードが正しくありません。')
+      console.error('[Login] Auth error:', error.message, error.status)
+      setError(`ログイン失敗: ${error.message} (status: ${error.status})`)
       setLoading(false)
       return
     }
 
-    const { data: profile } = await supabase
+    console.log('[Login] Success, fetching profile for user:', data.user.id)
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', data.user.id)
       .single()
+
+    console.log('[Login] Profile:', profile, 'Error:', profileError)
 
     if (profile?.role === 'coach') {
       router.push('/dashboard/coach')
@@ -55,8 +74,14 @@ export default function Login() {
           </div>
 
           <div className="rounded-3xl bg-white p-8 shadow-lg border border-[#E5E7EB]">
+            {debugInfo && (
+              <div className="mb-4 rounded-2xl bg-gray-50 border border-gray-200 px-4 py-3 text-xs text-gray-500 font-mono">
+                <p>URL: {debugInfo.url}</p>
+                <p>KEY: {debugInfo.key}</p>
+              </div>
+            )}
             {error && (
-              <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 break-all">
                 {error}
               </div>
             )}
