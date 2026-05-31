@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/yourk/OneDrive/Desktop/Claude-Work/pages/_app.js"],"sourcesContent":["import '../styles/globals.css'\r\n\r\nexport default function MyApp({ Component, pageProps }) {\r\n  return <Component {...pageProps} />\r\n}\r\n"],"names":["MyApp","Component","pageProps"],"mappings":";;;;;;;AAEe,SAASA,MAAM,EAAEC,SAAS,EAAEC,SAAS,EAAE;IACpD,qBAAO,qKAACD;QAAW,GAAGC,SAAS;;;;;;AACjC"}}]
-}

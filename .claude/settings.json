@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git reset *)",
+      "Bash(git restore *)",
+      "Bash(mkdir \"c:\\\\Users\\\\yourk\\\\OneDrive\\\\Desktop\\\\Claude-Work\\\\pages\\\\materials\")",
+      "Bash(git gc *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\yourk\\OneDrive\\Desktop\\Claude-Work\\pages"
+    ]
+  }
+}

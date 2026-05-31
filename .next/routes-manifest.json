@@ -21,7 +21,16 @@
     "afterFiles": [],
     "fallback": []
   },
-  "dynamicRoutes": [],
+  "dynamicRoutes": [
+    {
+      "page": "/materials/[lessonId]",
+      "regex": "^/materials/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPlessonId": "nxtPlessonId"
+      },
+      "namedRegex": "^/materials/(?<nxtPlessonId>[^/]+?)(?:/)?$"
+    }
+  ],
   "staticRoutes": [
     {
       "page": "/",
@@ -48,6 +57,12 @@
       "namedRegex": "^/contact/complete(?:/)?$"
     },
     {
+      "page": "/dashboard/coach",
+      "regex": "^/dashboard/coach(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/coach(?:/)?$"
+    },
+    {
       "page": "/dashboard/student",
       "regex": "^/dashboard/student(?:/)?$",
       "routeKeys": {},
@@ -58,6 +73,12 @@
       "regex": "^/login(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/materials",
+      "regex": "^/materials(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/materials(?:/)?$"
     },
     {
       "page": "/mypage",

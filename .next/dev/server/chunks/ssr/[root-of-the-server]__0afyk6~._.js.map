@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 40, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/yourk/OneDrive/Desktop/Claude-Work/pages/_document.js"],"sourcesContent":["import { Html, Head, Main, NextScript } from 'next/document'\r\n\r\nexport default function Document() {\r\n  return (\r\n    <Html lang=\"ja\">\r\n      <Head>\r\n        <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />\r\n        <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossOrigin=\"true\" />\r\n        <link\r\n          href=\"https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap\"\r\n          rel=\"stylesheet\"\r\n        />\r\n      </Head>\r\n      <body>\r\n        <Main />\r\n        <NextScript />\r\n      </body>\r\n    </Html>\r\n  )\r\n}\r\n"],"names":["Document","lang","rel","href","crossOrigin"],"mappings":";;;;;AAAA;;;AAEe,SAASA;IACtB,qBACE,qKAAC,iIAAI;QAACC,MAAK;;0BACT,qKAAC,iIAAI;;kCACH,qKAAC;wBAAKC,KAAI;wBAAaC,MAAK;;;;;;kCAC5B,qKAAC;wBAAKD,KAAI;wBAAaC,MAAK;wBAA4BC,aAAY;;;;;;kCACpE,qKAAC;wBACCD,MAAK;wBACLD,KAAI;;;;;;;;;;;;0BAGR,qKAAC;;kCACC,qKAAC,iIAAI;;;;;kCACL,qKAAC,uIAAU;;;;;;;;;;;;;;;;;AAInB"}}]
-}

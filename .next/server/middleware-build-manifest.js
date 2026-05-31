@@ -13,8 +13,8 @@ globalThis.__BUILD_MANIFEST = {
       "static/chunks/0dwvc.uivahmm.js",
       "static/chunks/0v_ah0suzg~w_.js",
       "static/chunks/0cz8orqpsef5w.js",
-      "static/chunks/17wplk-cq~-df.css",
-      "static/chunks/turbopack-0pq7wiwhufwre.js"
+      "static/chunks/0-a4js1-b1kw9.css",
+      "static/chunks/turbopack-0lu0a4-81gqy..js"
     ],
     "/_error": [
       "static/chunks/08yt_styu6x03.js",
@@ -47,6 +47,14 @@ globalThis.__BUILD_MANIFEST = {
       "static/chunks/0v_ah0suzg~w_.js",
       "static/chunks/turbopack-0bguwprcf3pc..js"
     ],
+    "/dashboard/coach": [
+      "static/chunks/0vryth9i_ruhq.js",
+      "static/chunks/0dwvc.uivahmm.js",
+      "static/chunks/06frl1__8-ljs.js",
+      "static/chunks/0cz8orqpsef5w.js",
+      "static/chunks/0v_ah0suzg~w_.js",
+      "static/chunks/turbopack-03x~ay2gextmz.js"
+    ],
     "/dashboard/student": [
       "static/chunks/12dot-g_miin~.js",
       "static/chunks/0dwvc.uivahmm.js",
@@ -56,12 +64,28 @@ globalThis.__BUILD_MANIFEST = {
       "static/chunks/turbopack-0d7-ad75rts1t.js"
     ],
     "/login": [
-      "static/chunks/0644tcsb78ba3.js",
+      "static/chunks/0uwd596jpb060.js",
       "static/chunks/0dwvc.uivahmm.js",
       "static/chunks/0cz8orqpsef5w.js",
       "static/chunks/06frl1__8-ljs.js",
       "static/chunks/0v_ah0suzg~w_.js",
-      "static/chunks/turbopack-13xrt2jcolxz8.js"
+      "static/chunks/turbopack-0eeicjn~gy8no.js"
+    ],
+    "/materials": [
+      "static/chunks/0qvv-cqii~dyi.js",
+      "static/chunks/0dwvc.uivahmm.js",
+      "static/chunks/06frl1__8-ljs.js",
+      "static/chunks/0cz8orqpsef5w.js",
+      "static/chunks/0v_ah0suzg~w_.js",
+      "static/chunks/turbopack-0_rbtgd0l9xap.js"
+    ],
+    "/materials/[lessonId]": [
+      "static/chunks/0j-1f9roxzr3w.js",
+      "static/chunks/0dwvc.uivahmm.js",
+      "static/chunks/06frl1__8-ljs.js",
+      "static/chunks/0cz8orqpsef5w.js",
+      "static/chunks/0v_ah0suzg~w_.js",
+      "static/chunks/turbopack-0fzqwq7w-euqq.js"
     ],
     "/mypage": [
       "static/chunks/0_~.cti~nepn-.js",
@@ -91,9 +115,9 @@ globalThis.__BUILD_MANIFEST = {
   "devFiles": [],
   "polyfillFiles": [],
   "lowPriorityFiles": [
-    "static/wZp2N2K3JMM0LGvA7dcEy/_buildManifest.js",
-    "static/wZp2N2K3JMM0LGvA7dcEy/_ssgManifest.js",
-    "static/wZp2N2K3JMM0LGvA7dcEy/_clientMiddlewareManifest.js"
+    "static/Kzl8AwX5rj4-9_IoNR_jJ/_buildManifest.js",
+    "static/Kzl8AwX5rj4-9_IoNR_jJ/_ssgManifest.js",
+    "static/Kzl8AwX5rj4-9_IoNR_jJ/_clientMiddlewareManifest.js"
   ],
   "rootMainFiles": []
 };
