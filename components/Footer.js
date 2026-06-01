@@ -6,8 +6,8 @@ export default function Footer() {
           <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-1">
             <div className="text-obang-blue whitespace-nowrap">© {new Date().getFullYear()} 電話韓国語 チグム</div>
             <div className="flex gap-3 whitespace-nowrap">
-              <a className="hover:text-obang-blue" href="#">利用規約</a>
-              <a className="hover:text-obang-blue" href="#">プライバシー</a>
+              <a className="hover:text-obang-blue" href="/terms">利用規約</a>
+              <a className="hover:text-obang-blue" href="/privacy">プライバシー</a>
               <a className="hover:text-obang-blue" href="/contact">お問い合わせ</a>
               <a className="hover:text-obang-blue" href="/coach-recruit">コーチ募集</a>
             </div>
