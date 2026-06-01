@@ -43,7 +43,9 @@ export default function Login() {
 
     console.log('[Login] Profile:', profile, 'Error:', profileError)
 
-    if (profile?.role === 'coach') {
+    if (profile?.role === 'admin') {
+      router.push('/dashboard/admin')
+    } else if (profile?.role === 'coach') {
       router.push('/dashboard/coach')
     } else {
       router.push('/dashboard/student')
