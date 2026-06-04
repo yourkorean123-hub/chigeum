@@ -187,8 +187,8 @@ export default function Home() {
               ].map((dummy, i) => (
                 <div key={i} className="p-6 bg-gray-50 rounded-2xl border border-dashed border-gray-300 border-2">
                   <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-                    <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-4xl flex-shrink-0">
-                      {dummy.emoji}
+                    <div className="w-24 h-24 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 opacity-40">
+                      <img src="/chogori.png" alt="コーチ募集中" className="w-full h-full object-cover" />
                     </div>
                     <div className="text-center sm:text-left">
                       <div className="font-bold text-lg text-gray-400">{dummy.label}</div>
