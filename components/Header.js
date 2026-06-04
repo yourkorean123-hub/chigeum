@@ -43,7 +43,7 @@ export default function Header() {
           <nav className="hidden md:flex items-center space-x-6">
             <a className="text-obang-blue hover:text-obang-red" href="#pricing">部活費</a>
             <a className="text-obang-blue hover:text-obang-red" href="#coach">コーチ</a>
-            <a className="text-obang-blue hover:text-obang-red" href="#materials">教材</a>
+            <a className="text-obang-blue hover:text-obang-red" href={user ? '/materials' : '/login'}>教材</a>
             <a className="text-obang-blue hover:text-obang-red" href="#testimonials">部員の声</a>
             <a className="text-obang-blue hover:text-obang-red" href="/contact">お問い合わせ</a>
             {user ? (
@@ -71,7 +71,7 @@ export default function Header() {
           <nav className="md:hidden bg-white border-t border-gray-100 px-6 py-4 flex flex-col gap-4">
             <a className="text-obang-blue hover:text-obang-red text-base" href="#pricing" onClick={() => setIsOpen(false)}>部活費</a>
             <a className="text-obang-blue hover:text-obang-red text-base" href="#coach" onClick={() => setIsOpen(false)}>コーチ</a>
-            <a className="text-obang-blue hover:text-obang-red text-base" href="#materials" onClick={() => setIsOpen(false)}>教材</a>
+            <a className="text-obang-blue hover:text-obang-red text-base" href={user ? '/materials' : '/login'} onClick={() => setIsOpen(false)}>教材</a>
             <a className="text-obang-blue hover:text-obang-red text-base" href="#testimonials" onClick={() => setIsOpen(false)}>部員の声</a>
             <a className="text-obang-blue hover:text-obang-red text-base" href="/contact" onClick={() => setIsOpen(false)}>お問い合わせ</a>
             {user ? (
