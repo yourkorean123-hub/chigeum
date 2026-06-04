@@ -21,7 +21,7 @@ export default function Home() {
             <p className="text-lg text-[#0C447C] mb-1">いつか話せたらを、チグム（今）話せるに。</p>
             <p className="text-lg text-[#0C447C] mb-6">さあ、チグムで話す部活、始めよう。</p>
             <div className="flex flex-col gap-4 mb-8">
-              <a href="/register" style={{ background: '#C8272D' }} className="px-6 py-3 rounded-md text-white">
+              <a href="https://utage-system.com/p/D6MRCPkR1lZy" style={{ background: '#C8272D' }} className="px-6 py-3 rounded-md text-white">
                 <div className="flex flex-col items-center">
                   <span className="text-base font-semibold">入部届を送る</span>
                   <span className="text-sm opacity-90">（仮入部・無料）</span>
@@ -248,7 +248,7 @@ export default function Home() {
       <section id="cta" className="py-12 bg-[#C8272D]">
         <div className="max-w-5xl mx-auto px-6 text-center">
           <div className="flex flex-col gap-4 justify-center items-center">
-            <a className="max-w-xs w-full bg-white text-[#C8272D] px-8 py-4 rounded-md font-semibold hover:opacity-90 transition border-2 border-white" href="/register">
+            <a className="max-w-xs w-full bg-white text-[#C8272D] px-8 py-4 rounded-md font-semibold hover:opacity-90 transition border-2 border-white" href="https://utage-system.com/p/D6MRCPkR1lZy">
               <div className="flex flex-col items-center">
                 <span className="text-base font-semibold">入部届を送る</span>
                 <span className="text-sm opacity-90">（仮入部・無料）</span>
