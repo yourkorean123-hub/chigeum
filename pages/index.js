@@ -154,21 +154,26 @@ export default function Home() {
       <section id="coach" className="py-12">
         <div className="max-w-5xl mx-auto px-6">
           <h2 className="text-2xl font-bold mb-6">ネイティブコーチ紹介</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="p-6 bg-white rounded-lg shadow-sm text-center">
-              <img src="/chogori.png" alt="コーチ1先生" className="w-20 h-20 rounded-full object-cover mx-auto mb-3" />
-              <div className="font-semibold">コーチ1先生</div>
-              <div className="text-sm text-gray-600">初心者担当・日本語OK</div>
-            </div>
-            <div className="p-6 bg-white rounded-lg shadow-sm text-center">
-              <img src="/chogori.png" alt="コーチ2先生" className="w-20 h-20 rounded-full object-cover mx-auto mb-3" />
-              <div className="font-semibold">コーチ2先生</div>
-              <div className="text-sm text-gray-600">発音指導が得意</div>
-            </div>
-            <div className="p-6 bg-white rounded-lg shadow-sm text-center">
-              <img src="/chogori.png" alt="コーチ3先生" className="w-20 h-20 rounded-full object-cover mx-auto mb-3" />
-              <div className="font-semibold">コーチ3先生</div>
-              <div className="text-sm text-gray-600">会話重視の指導</div>
+          <div className="grid md:grid-cols-1 gap-6 max-w-2xl mx-auto">
+            <div className="p-6 bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+                <img src="/coaches/hyejung.jpg" alt="イ・ヘジョン" className="w-24 h-24 rounded-full object-cover flex-shrink-0" />
+                <div className="text-center sm:text-left">
+                  <div className="font-bold text-lg text-[#0C447C]">イ・ヘジョン</div>
+                  <div className="text-sm text-gray-500 mb-2">이혜정 コーチ</div>
+                  <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                    東京に住んで10年。日本に来る前、韓国で電話日本語でお世話になったので、今度は韓国語を学ぶ日本の方のお役に立ちたいです。
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-3 justify-center sm:justify-start">
+                    {['発音指導', '初心者サポート', '日常会話', 'ビジネス韓国語', '全レベル対応'].map(tag => (
+                      <span key={tag} className="text-[11px] bg-[#A32D2D]/10 text-[#A32D2D] font-semibold px-2 py-0.5 rounded-full">{tag}</span>
+                    ))}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    🕐 月〜日 15:00〜18:00　月・火 20:00〜　水・木・土・日 21:00〜
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
