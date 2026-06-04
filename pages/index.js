@@ -169,8 +169,9 @@ export default function Home() {
                       <span key={tag} className="text-[11px] bg-[#A32D2D]/10 text-[#A32D2D] font-semibold px-2 py-0.5 rounded-full">{tag}</span>
                     ))}
                   </div>
-                  <div className="text-xs text-gray-500">
-                    🕐 月〜日 15:00〜18:00　月・火 20:00〜　水・木・土・日 21:00〜
+                  <div className="text-xs text-gray-500 space-y-0.5">
+                    <div>🕐 月・水・木・土・日 15:00〜18:00　火 15:20〜18:00</div>
+                    <div>🌙 月 20:00〜　火 20:30〜　水・木・土・日 21:00〜　火 21:30〜</div>
                   </div>
                 </div>
               </div>
