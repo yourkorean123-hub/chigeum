@@ -51,7 +51,7 @@ export default function Header() {
             ) : (
               <a className="text-obang-blue hover:text-obang-red" href="/login">ログイン</a>
             )}
-            <a className="ml-4 btn-red-blue" href="/register">入部する</a>
+            <a className="ml-4 btn-red-blue" href="https://utage-system.com/p/D6MRCPkR1lZy">入部する</a>
           </nav>
 
           {/* ハンバーガーボタン（スマホのみ） */}
@@ -79,7 +79,7 @@ export default function Header() {
             ) : (
               <a className="text-obang-blue hover:text-obang-red text-base" href="/login" onClick={() => setIsOpen(false)}>ログイン</a>
             )}
-            <a className="btn-red-blue inline-block text-center" href="/register" onClick={() => setIsOpen(false)}>入部する</a>
+            <a className="btn-red-blue inline-block text-center" href="https://utage-system.com/p/D6MRCPkR1lZy" onClick={() => setIsOpen(false)}>入部する</a>
           </nav>
         )}
       </header>
