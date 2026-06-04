@@ -154,7 +154,9 @@ export default function Home() {
       <section id="coach" className="py-12">
         <div className="max-w-5xl mx-auto px-6">
           <h2 className="text-2xl font-bold mb-6">ネイティブコーチ紹介</h2>
-          <div className="grid md:grid-cols-1 gap-6 max-w-2xl mx-auto">
+          <div className="grid md:grid-cols-1 gap-6">
+
+            {/* ヘジョンコーチ */}
             <div className="p-6 bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
                 <img src="/coaches/hyejung.jpg" alt="イ・ヘジョン" className="w-24 h-24 rounded-full object-cover flex-shrink-0" />
@@ -176,6 +178,31 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {/* ダミーコーチ（募集中） */}
+            <div className="grid sm:grid-cols-2 gap-6">
+              {[
+                { emoji: '🌟', label: 'コーチ募集中', desc: '現在このポジションのコーチを募集しています。' },
+                { emoji: '🌟', label: 'コーチ募集中', desc: '現在このポジションのコーチを募集しています。' },
+              ].map((dummy, i) => (
+                <div key={i} className="p-6 bg-gray-50 rounded-2xl border border-dashed border-gray-300 border-2">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+                    <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-4xl flex-shrink-0">
+                      {dummy.emoji}
+                    </div>
+                    <div className="text-center sm:text-left">
+                      <div className="font-bold text-lg text-gray-400">{dummy.label}</div>
+                      <div className="text-sm text-gray-400 mb-2">Coming Soon</div>
+                      <p className="text-sm text-gray-400 leading-relaxed mb-3">{dummy.desc}</p>
+                      <a href="/coach-recruit" className="inline-block text-[11px] bg-gray-200 text-gray-500 font-semibold px-3 py-1 rounded-full hover:bg-[#A32D2D]/10 hover:text-[#A32D2D] transition">
+                        コーチ応募はこちら →
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
           </div>
         </div>
       </section>
