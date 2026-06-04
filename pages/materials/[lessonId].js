@@ -3052,6 +3052,26 @@ const LESSON_DATA = {
       { q: '「これからよろしくお願いします」を韓国語で言ってみましょう。', a: '앞으로 잘 부탁해요.' },
     ],
     point: `【フリートーク入門について】\nこのコースでは、実際の会話で使える自然な表現を練習します。文法の正確さよりも「伝えること」を重視しましょう。\n\n【ポイント】자기소개 패턴\n저는 ○○이에요（私は○○です）\n○○에서 왔어요（○○から来ました）\n○○한 지 〜됐어요（○○して〜になりました）`,
+    type: 'freetalk',
+    column: {
+      kr: `한국 사람들이 처음 만났을 때 자주 하는 질문 중 하나가 바로 "취미가 뭐예요？"입니다. 한국에서는 처음 만나는 사람과도 취미나 좋아하는 것을 가볍게 물어보는 문화가 있어요. 취미를 통해 공통점을 찾고, 금방 친해질 수 있는 것이 한국 스타일입니다. "저는 한국 드라마 보는 걸 좋아해요"라고 말하면, 상대방도 자연스럽게 자신의 취미를 이야기하게 되죠. 취미 이야기는 어색한 분위기를 부드럽게 만들어 주는 좋은 대화의 시작점이에요.`,
+      jp: `韓国人が初対面でよく聞くことのひとつが「취미가 뭐예요？（趣味は何ですか？）」です。韓国では、初めて会う人とでも趣味や好きなことを気軽に聞き合う文化があります。趣味を通じて共通点を見つけ、すぐに仲良くなれるのが韓国スタイルです。「私は韓国ドラマを見るのが好きです」と言えば、相手も自然に自分の趣味を話してくれます。趣味の話は、ぎこちない雰囲気をやわらげてくれる、会話の良いきっかけになりますよ。`,
+    },
+    words: [
+      { kr: '취미', jp: '趣味', note: '취미가 뭐예요？（趣味は何ですか？）' },
+      { kr: '초면', jp: '初対面', note: '초면에도 편하게 물어봐요（初対面でも気軽に聞きます）' },
+      { kr: '공통점', jp: '共通点', note: '공통점을 찾다（共通点を見つける）' },
+      { kr: '어색하다', jp: 'ぎこちない・気まずい', note: '어색한 분위기（気まずい雰囲気）' },
+      { kr: '부드럽다', jp: '柔らかい・穏やかだ', note: '분위기를 부드럽게 하다（雰囲気をやわらげる）' },
+      { kr: '자연스럽다', jp: '自然だ', note: '자연스럽게 이야기하다（自然に話す）' },
+    ],
+    questions: [
+      { kr: '취미가 뭐예요？', jp: '趣味は何ですか？' },
+      { kr: '주말에 보통 뭐 해요？', jp: '週末は普段何をしますか？' },
+      { kr: '요즘 빠져있는 게 있어요？', jp: '最近ハマっていることはありますか？' },
+      { kr: '한국어를 배우는 이유가 뭐예요？', jp: '韓国語を学ぶ理由は何ですか？' },
+      { kr: '취미로 새로 시작하고 싶은 게 있어요？', jp: '趣味として新しく始めたいことはありますか？' },
+    ],
   },
 
   'freetalk-lesson2': {
@@ -5216,6 +5236,12 @@ const TABS = [
   { id: 'point',    label: 'ポイント解説', icon: '💡' },
 ]
 
+const FREETALK_TABS = [
+  { id: 'column',   label: 'コラム',     icon: '📖' },
+  { id: 'words',    label: '単語・表現', icon: '📝' },
+  { id: 'freeconv', label: '自由会話',   icon: '💬' },
+]
+
 // ─── 音声読み上げフック ────────────────────────────────────────
 function useSpeech() {
   const [speakingId, setSpeakingId] = useState(null)
@@ -5307,7 +5333,7 @@ export default function LessonDetail() {
               </div>
 
               <div className="flex gap-2 overflow-x-auto pb-1 mb-6">
-                {TABS.map(tab => (
+                {(lesson.type === 'freetalk' ? FREETALK_TABS : TABS).map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
@@ -5322,7 +5348,67 @@ export default function LessonDetail() {
                 ))}
               </div>
 
-              <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-sm p-6">
+              {/* フリートーク用タブコンテンツ */}
+              {lesson.type === 'freetalk' && (
+                <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-sm p-6">
+
+                  {activeTab === 'column' && lesson.column && (
+                    <div>
+                      <h2 className="text-base font-bold text-[#0C447C] mb-4">📖 コラム</h2>
+                      <div className="rounded-2xl bg-[#0C447C]/5 border border-[#0C447C]/15 px-5 py-4 mb-4">
+                        <p className="text-base leading-relaxed text-gray-800 mb-4">{lesson.column.kr}</p>
+                        <hr className="border-[#0C447C]/20 mb-4" />
+                        <p className="text-sm leading-relaxed text-gray-600">{lesson.column.jp}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'words' && lesson.words && (
+                    <div>
+                      <h2 className="text-base font-bold text-[#0C447C] mb-4">📝 単語・表現</h2>
+                      <div className="divide-y divide-gray-100">
+                        {lesson.words.map((w, i) => (
+                          <div key={i} className="py-4">
+                            <div className="flex items-center gap-3 mb-1">
+                              <SpeakButton text={w.kr} id={`word-${i}`} speakingId={speakingId} onSpeak={speak} />
+                              <span className="text-lg font-bold text-[#A32D2D]">{w.kr}</span>
+                              <span className="text-sm font-semibold text-gray-700">{w.jp}</span>
+                            </div>
+                            <p className="text-xs text-gray-500 pl-9">{w.note}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'freeconv' && lesson.questions && (
+                    <div>
+                      <h2 className="text-base font-bold text-[#0C447C] mb-2">💬 自由会話</h2>
+                      <p className="text-xs text-gray-500 mb-5">コーチと意見交換しながら自由に話してみましょう。</p>
+                      <div className="space-y-4">
+                        {lesson.questions.map((q, i) => (
+                          <div key={i} className="rounded-2xl bg-[#A32D2D]/5 border border-[#A32D2D]/15 px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#A32D2D] text-white text-xs font-bold flex items-center justify-center">Q{i+1}</span>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-base font-bold text-[#A32D2D] flex-1">{q.kr}</p>
+                                  <SpeakButton text={q.kr} id={`q-${i}`} speakingId={speakingId} onSpeak={speak} />
+                                </div>
+                                <p className="text-sm text-gray-600 mt-0.5">{q.jp}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+              {/* 通常タブコンテンツ */}
+              {lesson.type !== 'freetalk' && <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-sm p-6">
 
                 {activeTab === 'key' && (
                   <div className="space-y-3">
@@ -5419,6 +5505,7 @@ export default function LessonDetail() {
                 )}
 
               </div>
+              }
 
               <div className="flex justify-between mt-6">
                 <button
