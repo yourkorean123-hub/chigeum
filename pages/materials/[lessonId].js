@@ -5247,7 +5247,7 @@ export default function LessonDetail() {
       student_id: userId,
       course_id: info.prefix,
       lesson_number: info.num,
-      lesson_title: lesson?.title || '',
+
       status: 'pending',
     }
     console.log('[LessonAccess] Inserting:', payload)
