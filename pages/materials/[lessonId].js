@@ -5209,14 +5209,17 @@ export default function LessonDetail() {
   useEffect(() => {
     if (!lessonId || !userId || !lesson) return
     if (!requiresApproval(lesson)) { setAccessStatus('free'); return }
+    const info = getCoursePrefix(lessonId)
+    if (!info) return
     setAccessStatus('loading')
-    console.log('[LessonAccess] Checking access:', { userId, lessonId })
+    console.log('[LessonAccess] Checking:', { student_id: userId, course_id: info.prefix, lesson_number: info.num })
     supabase
       .from('lesson_access')
       .select('status')
-      .eq('user_id', userId)
-      .eq('lesson_id', lessonId)
-      .maybeSingle()                          // .single() → .maybeSingle() に変更（レコードなしでもエラーにならない）
+      .eq('student_id', userId)
+      .eq('course_id', info.prefix)
+      .eq('lesson_number', info.num)
+      .maybeSingle()
       .then(({ data, error }) => {
         if (error) {
           console.error('[LessonAccess] Check error:', error)
@@ -5234,21 +5237,21 @@ export default function LessonDetail() {
       console.error('[LessonAccess] Missing userId or lessonId', { userId, lessonId })
       return
     }
+    const info = getCoursePrefix(lessonId)
+    if (!info) {
+      console.error('[LessonAccess] Could not parse lessonId:', lessonId)
+      return
+    }
     setApplying(true)
-    console.log('[LessonAccess] Inserting:', {
-      user_id: userId,
-      lesson_id: lessonId,
-      lesson_title: lesson?.title,
-      course_id: lesson?.course,
-      status: 'pending',
-    })
-    const { data, error } = await supabase.from('lesson_access').insert({
-      user_id: userId,
-      lesson_id: lessonId,
+    const payload = {
+      student_id: userId,
+      course_id: info.prefix,
+      lesson_number: info.num,
       lesson_title: lesson?.title || '',
-      course_id: lesson?.course || '',
       status: 'pending',
-    }).select()
+    }
+    console.log('[LessonAccess] Inserting:', payload)
+    const { data, error } = await supabase.from('lesson_access').insert(payload).select()
 
     if (error) {
       console.error('[LessonAccess] Insert error:', error)

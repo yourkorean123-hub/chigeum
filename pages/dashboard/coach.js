@@ -181,11 +181,12 @@ export default function CoachDashboard() {
   }, [])
 
   const fetchPending = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('lesson_access')
-      .select('id, user_id, lesson_id, lesson_title, course, status, created_at, profiles(email)')
+      .select('id, student_id, course_id, lesson_number, lesson_title, status, created_at, profiles(email)')
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
+    if (error) console.error('[CoachApproval] Fetch error:', error)
     setPendingList(data || [])
   }
 
@@ -323,7 +324,7 @@ export default function CoachDashboard() {
                       <div key={req.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex items-center justify-between gap-4">
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-gray-800 truncate">{req.profiles?.email || req.user_id}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{req.course_id}　{req.lesson_id}　{req.lesson_title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{req.course_id}　第{req.lesson_number}課　{req.lesson_title}</p>
                           <p className="text-[11px] text-gray-400 mt-0.5">{new Date(req.created_at).toLocaleDateString('ja-JP')}</p>
                         </div>
                         <button
