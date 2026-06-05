@@ -10,6 +10,7 @@ const MENU = [
   { id: 'review',      label: 'レビュー入力',       icon: '✏️' },
   { id: 'reward',      label: '報酬確認',           icon: '💴' },
   { id: 'availability',label: '受講可能時間の設定', icon: '⚙️' },
+  { id: 'approvals',   label: '承認待ち一覧',       icon: '🔓' },
 ]
 
 // モックデータ
@@ -153,6 +154,8 @@ export default function CoachDashboard() {
   const [loading, setLoading] = useState(true)
   const [activeMenu, setActiveMenu] = useState('today')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [pendingList, setPendingList] = useState([])
+  const [approvingId, setApprovingId] = useState(null)
   const [schedule, setSchedule] = useState(MOCK_SCHEDULE)
   const [reviewTarget, setReviewTarget] = useState(null)
 
@@ -176,6 +179,26 @@ export default function CoachDashboard() {
       setLoading(false)
     })
   }, [])
+
+  const fetchPending = async () => {
+    const { data } = await supabase
+      .from('lesson_access')
+      .select('id, user_id, lesson_id, lesson_title, course, status, created_at, profiles(email)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+    setPendingList(data || [])
+  }
+
+  useEffect(() => {
+    if (activeMenu === 'approvals') fetchPending()
+  }, [activeMenu])
+
+  const handleApprove = async (id) => {
+    setApprovingId(id)
+    await supabase.from('lesson_access').update({ status: 'approved' }).eq('id', id)
+    setPendingList(prev => prev.filter(r => r.id !== id))
+    setApprovingId(null)
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -283,7 +306,41 @@ export default function CoachDashboard() {
               </>
             )}
 
-            {activeMenu !== 'today' && (
+            {activeMenu === 'approvals' && (
+              <>
+                <div className="mb-6">
+                  <h1 className="text-xl font-bold text-[#0C447C]">承認待ち一覧</h1>
+                  <p className="text-sm text-gray-400 mt-0.5">教材閲覧の申請が届いています</p>
+                </div>
+                {pendingList.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+                    <p className="text-2xl mb-3">✅</p>
+                    <p className="text-gray-400 text-sm">承認待ちの申請はありません</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingList.map(req => (
+                      <div key={req.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex items-center justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-gray-800 truncate">{req.profiles?.email || req.user_id}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{req.course}　第{req.lesson_id}課　{req.lesson_title}</p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">{new Date(req.created_at).toLocaleDateString('ja-JP')}</p>
+                        </div>
+                        <button
+                          onClick={() => handleApprove(req.id)}
+                          disabled={approvingId === req.id}
+                          className="flex-shrink-0 rounded-xl bg-[#0C447C] px-4 py-2 text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-50"
+                        >
+                          {approvingId === req.id ? '処理中...' : '承認する'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeMenu !== 'today' && activeMenu !== 'approvals' && (
               <>
                 <div className="mb-6">
                   <h1 className="text-xl font-bold text-[#0C447C]">
@@ -299,6 +356,7 @@ export default function CoachDashboard() {
 
           </div>
         </main>
+
       </div>
     </div>
   )

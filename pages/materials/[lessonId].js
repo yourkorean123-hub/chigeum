@@ -5117,6 +5117,28 @@ const FREETALK_TABS = [
 ]
 
 // ─── 音声読み上げフック ────────────────────────────────────────
+// ─── コースナビゲーション ──────────────────────────────────────
+function getCoursePrefix(lessonId) {
+  const m = lessonId.match(/^(.+)-lesson(\d+)$/)
+  return m ? { prefix: m[1], num: parseInt(m[2]) } : null
+}
+function getPrevLessonId(lessonId) {
+  const info = getCoursePrefix(lessonId)
+  if (!info || info.num <= 1) return null
+  const id = `${info.prefix}-lesson${info.num - 1}`
+  return LESSON_DATA[id] ? id : null
+}
+function getNextLessonId(lessonId) {
+  const info = getCoursePrefix(lessonId)
+  if (!info) return null
+  const id = `${info.prefix}-lesson${info.num + 1}`
+  return LESSON_DATA[id] ? id : null
+}
+// lesson番号が4以上かどうか（1〜3は自由閲覧）
+function requiresApproval(lesson) {
+  return lesson && lesson.lesson >= 4
+}
+
 function useSpeech() {
   const [speakingId, setSpeakingId] = useState(null)
   const utterRef = useRef(null)
@@ -5168,21 +5190,56 @@ export default function LessonDetail() {
   const [activeTab, setActiveTab] = useState('key')
   const [revealed, setRevealed] = useState({})
   const { speakingId, speak } = useSpeech()
+  // 閲覧権限: 'free' | 'loading' | 'none' | 'pending' | 'approved'
+  const [accessStatus, setAccessStatus] = useState('loading')
+  const [applying, setApplying] = useState(false)
+  const [userId, setUserId] = useState(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { router.push('/login'); return }
+      setUserId(session.user.id)
       setLoading(false)
     })
   }, [])
+
+  const lesson = lessonId ? LESSON_DATA[lessonId] : null
+
+  // アクセス権チェック
+  useEffect(() => {
+    if (!lessonId || !userId || !lesson) return
+    if (!requiresApproval(lesson)) { setAccessStatus('free'); return }
+    setAccessStatus('loading')
+    supabase
+      .from('lesson_access')
+      .select('status')
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+      .single()
+      .then(({ data }) => {
+        if (!data) setAccessStatus('none')
+        else setAccessStatus(data.status === 'approved' ? 'approved' : 'pending')
+      })
+  }, [lessonId, userId, lesson])
+
+  const handleApply = async () => {
+    setApplying(true)
+    await supabase.from('lesson_access').insert({
+      user_id: userId,
+      lesson_id: lessonId,
+      lesson_title: lesson?.title || '',
+      course: lesson?.course || '',
+      status: 'pending',
+    })
+    setAccessStatus('pending')
+    setApplying(false)
+  }
 
   if (loading || !lessonId) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <p className="text-gray-400 text-sm">読み込み中...</p>
     </div>
   )
-
-  const lesson = LESSON_DATA[lessonId]
 
   return (
     <div style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
@@ -5205,6 +5262,33 @@ export default function LessonDetail() {
                 <p className="text-xs font-semibold text-[#A32D2D] mb-1">{lesson.course} ／ 第{lesson.lesson}課</p>
                 <h1 className="text-xl md:text-2xl font-extrabold text-[#0C447C]">{lesson.title}</h1>
               </div>
+
+              {/* 閲覧制限ゲート */}
+              {(accessStatus === 'none' || accessStatus === 'pending' || accessStatus === 'loading') && requiresApproval(lesson) && (
+                <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-sm p-10 text-center mb-6">
+                  <p className="text-3xl mb-4">🔒</p>
+                  <p className="text-lg font-bold text-[#0C447C] mb-2">この課はコーチの承認が必要です</p>
+                  <p className="text-sm text-gray-500 mb-6">4課以降はコーチに申請して承認されると閲覧できます。</p>
+                  {accessStatus === 'loading' && <p className="text-sm text-gray-400">確認中...</p>}
+                  {accessStatus === 'none' && (
+                    <button
+                      onClick={handleApply}
+                      disabled={applying}
+                      className="rounded-2xl bg-[#A32D2D] px-8 py-3 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-50"
+                    >
+                      {applying ? '申請中...' : 'コーチに申請する'}
+                    </button>
+                  )}
+                  {accessStatus === 'pending' && (
+                    <div className="inline-flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-2xl px-6 py-3">
+                      <span className="text-sm text-yellow-700 font-semibold">⏳ 承認待ち中...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* コンテンツ本体（free または approved のときのみ表示） */}
+              {(accessStatus === 'free' || accessStatus === 'approved') && <>
 
               <div className="flex gap-2 overflow-x-auto pb-1 mb-6">
                 {(lesson.type === 'freetalk' ? FREETALK_TABS : TABS).map(tab => (
@@ -5381,19 +5465,40 @@ export default function LessonDetail() {
               </div>
               }
 
-              <div className="flex justify-between mt-6">
-                <button
-                  onClick={() => router.back()}
-                  className="text-sm text-gray-500 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-50 transition"
-                >
-                  ← 戻る
-                </button>
-                <Link
-                  href="/materials"
-                  className="text-sm font-semibold text-[#0C447C] border border-[#0C447C]/30 rounded-xl px-4 py-2.5 hover:bg-[#0C447C]/5 transition"
-                >
-                  教材一覧へ
-                </Link>
+              </> /* コンテンツ本体ここまで */}
+
+              {/* コースナビゲーション */}
+              <div className="flex justify-between items-center mt-6 gap-3">
+                {getPrevLessonId(lessonId) ? (
+                  <Link
+                    href={`/materials/${getPrevLessonId(lessonId)}`}
+                    className="flex-1 text-center text-sm text-gray-600 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-50 transition"
+                  >
+                    ← 前の課
+                  </Link>
+                ) : (
+                  <Link
+                    href="/materials"
+                    className="flex-1 text-center text-sm text-gray-500 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-50 transition"
+                  >
+                    ← 教材一覧
+                  </Link>
+                )}
+                {getNextLessonId(lessonId) ? (
+                  <Link
+                    href={`/materials/${getNextLessonId(lessonId)}`}
+                    className="flex-1 text-center text-sm font-semibold text-[#0C447C] border border-[#0C447C]/30 rounded-xl px-4 py-2.5 hover:bg-[#0C447C]/5 transition"
+                  >
+                    次の課 →
+                  </Link>
+                ) : (
+                  <Link
+                    href="/materials"
+                    className="flex-1 text-center text-sm font-semibold text-[#0C447C] border border-[#0C447C]/30 rounded-xl px-4 py-2.5 hover:bg-[#0C447C]/5 transition"
+                  >
+                    教材一覧へ
+                  </Link>
+                )}
               </div>
             </>
           ) : (
