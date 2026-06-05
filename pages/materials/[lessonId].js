@@ -5210,27 +5210,53 @@ export default function LessonDetail() {
     if (!lessonId || !userId || !lesson) return
     if (!requiresApproval(lesson)) { setAccessStatus('free'); return }
     setAccessStatus('loading')
+    console.log('[LessonAccess] Checking access:', { userId, lessonId })
     supabase
       .from('lesson_access')
       .select('status')
       .eq('user_id', userId)
       .eq('lesson_id', lessonId)
-      .single()
-      .then(({ data }) => {
+      .maybeSingle()                          // .single() → .maybeSingle() に変更（レコードなしでもエラーにならない）
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('[LessonAccess] Check error:', error)
+          setAccessStatus('none')
+          return
+        }
+        console.log('[LessonAccess] Access record:', data)
         if (!data) setAccessStatus('none')
         else setAccessStatus(data.status === 'approved' ? 'approved' : 'pending')
       })
   }, [lessonId, userId, lesson])
 
   const handleApply = async () => {
+    if (!userId || !lessonId) {
+      console.error('[LessonAccess] Missing userId or lessonId', { userId, lessonId })
+      return
+    }
     setApplying(true)
-    await supabase.from('lesson_access').insert({
+    console.log('[LessonAccess] Inserting:', {
+      user_id: userId,
+      lesson_id: lessonId,
+      lesson_title: lesson?.title,
+      course: lesson?.course,
+      status: 'pending',
+    })
+    const { data, error } = await supabase.from('lesson_access').insert({
       user_id: userId,
       lesson_id: lessonId,
       lesson_title: lesson?.title || '',
       course: lesson?.course || '',
       status: 'pending',
-    })
+    }).select()
+
+    if (error) {
+      console.error('[LessonAccess] Insert error:', error)
+      alert('申請に失敗しました。\n' + error.message)
+      setApplying(false)
+      return
+    }
+    console.log('[LessonAccess] Inserted successfully:', data)
     setAccessStatus('pending')
     setApplying(false)
   }
