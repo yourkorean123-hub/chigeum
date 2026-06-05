@@ -5239,14 +5239,14 @@ export default function LessonDetail() {
       user_id: userId,
       lesson_id: lessonId,
       lesson_title: lesson?.title,
-      course: lesson?.course,
+      course_id: lesson?.course,
       status: 'pending',
     })
     const { data, error } = await supabase.from('lesson_access').insert({
       user_id: userId,
       lesson_id: lessonId,
       lesson_title: lesson?.title || '',
-      course: lesson?.course || '',
+      course_id: lesson?.course || '',
       status: 'pending',
     }).select()
 
