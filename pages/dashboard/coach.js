@@ -13,7 +13,6 @@ const MENU = [
   { id: 'approvals',   label: '承認待ち一覧',       icon: '🔓' },
 ]
 
-// モックデータ
 const MOCK_SCHEDULE = [
   {
     id: 1,
@@ -94,7 +93,6 @@ function TodaySchedule({ schedule, onReview }) {
       <p className="text-sm text-gray-400">{dateStr}</p>
       {schedule.map(s => (
         <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          {/* 時間バー */}
           <div className="flex items-center gap-3 px-5 py-3 bg-[#0C447C]/5 border-b border-gray-100">
             <span className="text-xl font-extrabold text-[#0C447C] tracking-tight">{s.time}</span>
             <span className="font-semibold text-gray-800">{s.member}</span>
@@ -102,8 +100,6 @@ function TodaySchedule({ schedule, onReview }) {
               <span className="ml-auto text-[11px] bg-green-50 text-green-600 border border-green-200 rounded-full px-2 py-0.5 font-semibold">レビュー済</span>
             )}
           </div>
-
-          {/* 詳細 */}
           <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div>
               <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">通話方法</p>
@@ -127,8 +123,6 @@ function TodaySchedule({ schedule, onReview }) {
               </div>
             )}
           </div>
-
-          {/* アクション */}
           <div className="px-5 pb-4">
             <button
               onClick={() => onReview(s)}
@@ -183,9 +177,9 @@ export default function CoachDashboard() {
   const fetchPending = async () => {
     const { data, error } = await supabase
       .from('lesson_access')
-      .select('id, student_id, course_id, lesson_number, status, requested_at, profiles(email)')
+      .select('id, student_id, course_id, lesson_number, status, requested_at')
       .eq('status', 'pending')
-      .order('created_at', { ascending: true })
+      .order('requested_at', { ascending: true })
     if (error) console.error('[CoachApproval] Fetch error:', error)
     setPendingList(data || [])
   }
@@ -235,7 +229,6 @@ export default function CoachDashboard() {
         />
       )}
 
-      {/* トップバー */}
       <header className="bg-white border-b border-gray-100 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <button
@@ -261,12 +254,10 @@ export default function CoachDashboard() {
       </header>
 
       <div className="flex">
-        {/* オーバーレイ（スマホ） */}
         {sidebarOpen && (
           <div className="fixed inset-0 bg-black/30 z-20 md:hidden" onClick={() => setSidebarOpen(false)} />
         )}
 
-        {/* サイドバー */}
         <aside className={`
           fixed md:sticky top-[57px] left-0 h-[calc(100vh-57px)] w-56 bg-white border-r border-gray-100 z-20 flex flex-col
           transition-transform duration-200
@@ -293,7 +284,6 @@ export default function CoachDashboard() {
           </div>
         </aside>
 
-        {/* メインコンテンツ */}
         <main className="flex-1 p-4 md:p-8 min-w-0">
           <div className="max-w-3xl">
 
@@ -323,9 +313,9 @@ export default function CoachDashboard() {
                     {pendingList.map(req => (
                       <div key={req.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex items-center justify-between gap-4">
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-gray-800 truncate">{req.profiles?.email || req.user_id}</p>
+                          <p className="text-sm font-bold text-gray-800 truncate">{req.student_id}</p>
                           <p className="text-xs text-gray-500 mt-0.5">{req.course_id}　第{req.lesson_number}課</p>
-                          <p className="text-[11px] text-gray-400 mt-0.5">{new Date(req.created_at).toLocaleDateString('ja-JP')}</p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">{new Date(req.requested_at).toLocaleDateString('ja-JP')}</p>
                         </div>
                         <button
                           onClick={() => handleApprove(req.id)}
