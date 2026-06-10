@@ -11,8 +11,9 @@ export default function Home() {
     supabase
       .from('coaches')
       .select('id, name, bio, photo_url, is_active, tags, availability_text')
-      .eq('is_active', true)
-      .then(({ data }) => {
+  .eq('is_active', true)
+.order('display_order')
+.then(({ data }) => {
         if (data) setCoaches(data)
       })
   }, [])
