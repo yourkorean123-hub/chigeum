@@ -10,7 +10,7 @@ export default function Home() {
   useEffect(() => {
     supabase
       .from('coaches')
-      .select('id, name, bio, photo_url, is_active, profiles(role)')
+      .select('id, name, bio, photo_url, is_active, tags, availability_text')
       .eq('is_active', true)
       .then(({ data }) => {
         if (data) setCoaches(data)
@@ -167,7 +167,6 @@ export default function Home() {
           <h2 className="text-2xl font-bold mb-6">ネイティブコーチ紹介</h2>
           <div className="grid md:grid-cols-1 gap-6">
 
-            {/* Supabaseから取得したコーチ */}
             {coaches.map(coach => (
               <div key={coach.id} className="p-6 bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
@@ -180,12 +179,25 @@ export default function Home() {
                     <div className="font-bold text-lg text-[#0C447C]">{coach.name}</div>
                     <div className="text-sm text-gray-500 mb-2">コーチ</div>
                     <p className="text-sm text-gray-700 leading-relaxed mb-3">{coach.bio}</p>
+                    {coach.tags && coach.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3 justify-center sm:justify-start">
+                        {coach.tags.map(tag => (
+                          <span key={tag} className="text-[11px] bg-[#A32D2D]/10 text-[#A32D2D] font-semibold px-2 py-0.5 rounded-full">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    {coach.availability_text && (
+                      <div className="text-xs text-gray-500 space-y-0.5">
+                        {coach.availability_text.split('\n').map((line, i) => (
+                          <div key={i}>{line}</div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             ))}
 
-            {/* コーチ募集中（常に2枠表示） */}
             <div className="grid sm:grid-cols-2 gap-6">
               {[
                 { emoji: '🌟', label: 'コーチ募集中', desc: '現在このポジションのコーチを募集しています。' },
