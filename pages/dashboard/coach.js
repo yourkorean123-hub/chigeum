@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
@@ -46,6 +46,33 @@ const MOCK_SCHEDULE = [
   },
 ]
 
+// ── スケジュールグリッド定数 ──────────────────────────
+const DAYS = ['日', '月', '火', '水', '木', '金', '土']
+const START_H = 6
+const END_H = 23
+
+function getSlots() {
+  const slots = []
+  for (let h = START_H; h < END_H; h++) {
+    for (let m = 0; m < 60; m += 10) {
+      slots.push({ h, m })
+    }
+  }
+  return slots
+}
+const SLOTS = getSlots()
+
+function initGrid() {
+  const s = {}
+  DAYS.forEach((_, di) => {
+    SLOTS.forEach(({ h, m }) => {
+      s[`${di}-${h}-${m}`] = false
+    })
+  })
+  return s
+}
+
+// ── ReviewModal ───────────────────────────────────────
 function ReviewModal({ session, onClose, onSave }) {
   const [text, setText] = useState('')
   return (
@@ -69,6 +96,7 @@ function ReviewModal({ session, onClose, onSave }) {
   )
 }
 
+// ── TodaySchedule ─────────────────────────────────────
 function TodaySchedule({ schedule, onReview }) {
   const today = new Date()
   const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日（${'日月火水木金土'[today.getDay()]}）`
@@ -133,63 +161,225 @@ function TodaySchedule({ schedule, onReview }) {
   )
 }
 
+// ── AvailabilitySettings（グリッド版）────────────────
 function AvailabilitySettings({ coachId }) {
-  const [text, setText] = useState('')
+  const [grid, setGrid] = useState(initGrid)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [dragging, setDragging] = useState(null) // null | true | false
 
+  // Supabaseから読み込み
   useEffect(() => {
     if (!coachId) return
     supabase
-      .from('coaches')
-      .select('availability_text')
-      .eq('id', coachId)
-      .single()
+      .from('coach_schedule')
+      .select('day_of_week, hour, minute, is_open')
+      .eq('coach_id', coachId)
       .then(({ data }) => {
-        if (data) setText(data.availability_text || '')
+        if (data && data.length > 0) {
+          setGrid(prev => {
+            const next = { ...prev }
+            data.forEach(({ day_of_week, hour, minute, is_open }) => {
+              next[`${day_of_week}-${hour}-${minute}`] = is_open
+            })
+            return next
+          })
+        }
         setLoading(false)
       })
   }, [coachId])
 
-  const handleSave = async () => {
-    setSaving(true)
-    await supabase
-      .from('coaches')
-      .update({ availability_text: text })
-      .eq('id', coachId)
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  const toggle = useCallback((k) => {
+    setGrid(prev => ({ ...prev, [k]: !prev[k] }))
+    setSaved(false)
+  }, [])
+
+  const toggleCol = (di, checked) => {
+    setGrid(prev => {
+      const next = { ...prev }
+      SLOTS.forEach(({ h, m }) => { next[`${di}-${h}-${m}`] = checked })
+      return next
+    })
+    setSaved(false)
   }
+
+  const selectAll = () => {
+    setGrid(Object.fromEntries(Object.keys(initGrid()).map(k => [k, true])))
+    setSaved(false)
+  }
+
+  const clearAll = () => {
+    setGrid(initGrid())
+    setSaved(false)
+  }
+
+  const selectWeekday = () => {
+    setGrid(prev => {
+      const next = { ...prev }
+      Object.keys(next).forEach(k => {
+        const di = parseInt(k.split('-')[0])
+        next[k] = di >= 1 && di <= 5
+      })
+      return next
+    })
+    setSaved(false)
+  }
+
+  // ドラッグ選択
+  const handleMouseDown = (k) => {
+    const newVal = !grid[k]
+    setDragging(newVal)
+    setGrid(prev => ({ ...prev, [k]: newVal }))
+    setSaved(false)
+  }
+
+  const handleMouseEnter = (k) => {
+    if (dragging === null) return
+    setGrid(prev => ({ ...prev, [k]: dragging }))
+  }
+
+  const handleMouseUp = () => setDragging(null)
+
+  // 保存
+  const handleSave = async () => {
+    if (!coachId) return
+    setSaving(true)
+
+    const rows = []
+    DAYS.forEach((_, di) => {
+      SLOTS.forEach(({ h, m }) => {
+        rows.push({
+          coach_id: coachId,
+          day_of_week: di,
+          hour: h,
+          minute: m,
+          is_open: grid[`${di}-${h}-${m}`] || false,
+          updated_at: new Date().toISOString(),
+        })
+      })
+    })
+
+    const { error } = await supabase
+      .from('coach_schedule')
+      .upsert(rows, { onConflict: 'coach_id,day_of_week,hour,minute' })
+
+    setSaving(false)
+    if (!error) {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } else {
+      console.error('Save error:', error)
+    }
+  }
+
+  const openCount = Object.values(grid).filter(Boolean).length
 
   if (loading) return <p className="text-sm text-gray-400">読み込み中...</p>
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-      <p className="text-sm text-gray-600 mb-4">
-        受講可能な時間帯を入力してください。トップページのコーチ紹介に表示されます。
+    <div
+      className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 md:p-6"
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+    >
+      <p className="text-sm text-gray-500 mb-4">
+        受講できる時間帯をクリック（またはドラッグ）でオープンにしてください。赤いマスが生徒の申請可能な時間です。
       </p>
-      <div className="mb-2 text-xs text-gray-400">記入例：🕐 月・水・金 15:00〜18:00　🌙 火・木 20:00〜22:00</div>
-      <textarea
-        rows={6}
-        value={text}
-        onChange={e => setText(e.target.value)}
-        placeholder="受講可能時間を入力してください"
-        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40 resize-none mb-4"
-      />
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="rounded-xl bg-[#A32D2D] px-6 py-2.5 text-sm text-white font-semibold hover:opacity-90 transition disabled:opacity-50"
-      >
-        {saving ? '保存中...' : '保存する'}
-      </button>
-      {saved && <span className="ml-3 text-sm text-green-600 font-medium">✅ 保存しました</span>}
+
+      {/* コントロール */}
+      <div className="flex flex-wrap gap-2 items-center mb-4">
+        <button onClick={selectAll} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition">全選択</button>
+        <button onClick={clearAll} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition">全解除</button>
+        <button onClick={selectWeekday} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition">平日のみ</button>
+        <div className="flex-1" />
+        <div className="flex items-center gap-3 text-xs text-gray-400">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 rounded-sm bg-[#e85d4a]" />オープン
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 rounded-sm bg-gray-100 border border-gray-200" />クローズ
+          </span>
+        </div>
+      </div>
+
+      {/* グリッド */}
+      <div className="overflow-x-auto select-none">
+        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 480 }}>
+          <thead>
+            <tr>
+              <th style={{ width: 52, background: '#f8f8f8', border: '0.5px solid #e8e8e8', fontSize: 11, padding: '4px 0' }} />
+              {DAYS.map((d, di) => (
+                <th key={di} style={{ background: '#f8f8f8', border: '0.5px solid #e8e8e8', fontSize: 12, fontWeight: 500, color: '#666', padding: '4px 0', textAlign: 'center', width: 68 }}>
+                  {d}
+                  <br />
+                  <input
+                    type="checkbox"
+                    style={{ marginTop: 2 }}
+                    onChange={e => toggleCol(di, e.target.checked)}
+                    title={`${d}曜日を一括選択`}
+                  />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {SLOTS.map(({ h, m }) => (
+              <tr key={`${h}-${m}`}>
+                <td style={{
+                  border: '0.5px solid #e8e8e8',
+                  background: '#f8f8f8',
+                  textAlign: 'center',
+                  fontSize: m === 0 ? 11 : 10,
+                  fontWeight: m === 0 ? 600 : 400,
+                  color: m === 0 ? '#555' : '#bbb',
+                  padding: '0 4px',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {m === 0 ? `${h}時` : `${h}:${String(m).padStart(2, '0')}`}
+                </td>
+                {DAYS.map((_, di) => {
+                  const k = `${di}-${h}-${m}`
+                  const isOpen = grid[k]
+                  return (
+                    <td
+                      key={di}
+                      onMouseDown={() => handleMouseDown(k)}
+                      onMouseEnter={() => handleMouseEnter(k)}
+                      style={{
+                        border: '0.5px solid #e8e8e8',
+                        height: 20,
+                        cursor: 'pointer',
+                        background: isOpen ? '#e85d4a' : '#fff',
+                        transition: 'background 0.08s',
+                        userSelect: 'none',
+                      }}
+                    />
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 保存 */}
+      <div className="flex items-center gap-4 mt-5">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="rounded-xl bg-[#A32D2D] px-6 py-2.5 text-sm text-white font-semibold hover:opacity-90 transition disabled:opacity-50"
+        >
+          {saving ? '保存中...' : '保存する'}
+        </button>
+        <span className="text-xs text-gray-400">{openCount}コマ選択中</span>
+        {saved && <span className="text-sm text-green-600 font-medium">✅ 保存しました</span>}
+      </div>
     </div>
   )
 }
 
+// ── メインページ ──────────────────────────────────────
 export default function CoachDashboard() {
   const router = useRouter()
   const [user, setUser] = useState(null)
@@ -219,7 +409,6 @@ export default function CoachDashboard() {
         return
       }
 
-      // coachesテーブルからcoachIdを取得
       const { data: coach } = await supabase
         .from('coaches')
         .select('id')
@@ -258,7 +447,7 @@ export default function CoachDashboard() {
     router.push('/')
   }
 
-  const handleReviewSave = (text) => {
+  const handleReviewSave = () => {
     setSchedule(prev => prev.map(s =>
       s.id === reviewTarget.id ? { ...s, reviewed: true } : s
     ))
@@ -359,7 +548,7 @@ export default function CoachDashboard() {
               <>
                 <div className="mb-6">
                   <h1 className="text-xl font-bold text-[#0C447C]">受講可能時間の設定</h1>
-                  <p className="text-sm text-gray-400 mt-0.5">トップページに表示される受講可能時間を設定します</p>
+                  <p className="text-sm text-gray-400 mt-0.5">赤いマスをクリックしてオープン時間を設定します</p>
                 </div>
                 <AvailabilitySettings coachId={coachId} />
               </>
