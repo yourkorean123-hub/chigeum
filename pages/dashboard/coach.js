@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { supabase } from '../../lib/supabaseClient'
 
 const MENU = [
-  { id: 'today',       label: '本日のスケジュール', icon: '📋' },
-  { id: 'week',        label: '週間スケジュール',   icon: '📅' },
-  { id: 'review',      label: 'レビュー入力',       icon: '✏️' },
-  { id: 'reward',      label: '報酬確認',           icon: '💴' },
-  { id: 'availability',label: '受講可能時間の設定', icon: '⚙️' },
-  { id: 'approvals',   label: '承認待ち一覧',       icon: '🔓' },
+  { id: 'today',        label: '本日のスケジュール', icon: '📋' },
+  { id: 'week',         label: '週間スケジュール',   icon: '📅' },
+  { id: 'review',       label: 'レビュー入力',       icon: '✏️' },
+  { id: 'reward',       label: '報酬確認',           icon: '💴' },
+  { id: 'availability', label: '受講可能時間の設定', icon: '⚙️' },
+  { id: 'approvals',    label: '承認待ち一覧',       icon: '🔓' },
 ]
 
 const MOCK_SCHEDULE = [
@@ -61,14 +61,8 @@ function ReviewModal({ session, onClose, onSave }) {
           className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40 resize-none"
         />
         <div className="flex gap-3 mt-4">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition"
-          >キャンセル</button>
-          <button
-            onClick={() => onSave(text)}
-            className="flex-1 rounded-xl bg-[#A32D2D] py-2.5 text-sm text-white font-semibold hover:opacity-90 transition"
-          >保存する</button>
+          <button onClick={onClose} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition">キャンセル</button>
+          <button onClick={() => onSave(text)} className="flex-1 rounded-xl bg-[#A32D2D] py-2.5 text-sm text-white font-semibold hover:opacity-90 transition">保存する</button>
         </div>
       </div>
     </div>
@@ -127,10 +121,7 @@ function TodaySchedule({ schedule, onReview }) {
             <button
               onClick={() => onReview(s)}
               className={`w-full sm:w-auto rounded-xl px-5 py-2 text-sm font-semibold transition
-                ${s.reviewed
-                  ? 'bg-gray-100 text-gray-400 cursor-default'
-                  : 'bg-[#A32D2D] text-white hover:opacity-90'
-                }`}
+                ${s.reviewed ? 'bg-gray-100 text-gray-400 cursor-default' : 'bg-[#A32D2D] text-white hover:opacity-90'}`}
               disabled={s.reviewed}
             >
               {s.reviewed ? 'レビュー入力済み' : 'レビューを入力する'}
@@ -142,9 +133,67 @@ function TodaySchedule({ schedule, onReview }) {
   )
 }
 
+function AvailabilitySettings({ coachId }) {
+  const [text, setText] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (!coachId) return
+    supabase
+      .from('coaches')
+      .select('availability_text')
+      .eq('id', coachId)
+      .single()
+      .then(({ data }) => {
+        if (data) setText(data.availability_text || '')
+        setLoading(false)
+      })
+  }, [coachId])
+
+  const handleSave = async () => {
+    setSaving(true)
+    await supabase
+      .from('coaches')
+      .update({ availability_text: text })
+      .eq('id', coachId)
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+  }
+
+  if (loading) return <p className="text-sm text-gray-400">読み込み中...</p>
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <p className="text-sm text-gray-600 mb-4">
+        受講可能な時間帯を入力してください。トップページのコーチ紹介に表示されます。
+      </p>
+      <div className="mb-2 text-xs text-gray-400">記入例：🕐 月・水・金 15:00〜18:00　🌙 火・木 20:00〜22:00</div>
+      <textarea
+        rows={6}
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="受講可能時間を入力してください"
+        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40 resize-none mb-4"
+      />
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="rounded-xl bg-[#A32D2D] px-6 py-2.5 text-sm text-white font-semibold hover:opacity-90 transition disabled:opacity-50"
+      >
+        {saving ? '保存中...' : '保存する'}
+      </button>
+      {saved && <span className="ml-3 text-sm text-green-600 font-medium">✅ 保存しました</span>}
+    </div>
+  )
+}
+
 export default function CoachDashboard() {
   const router = useRouter()
   const [user, setUser] = useState(null)
+  const [coachId, setCoachId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeMenu, setActiveMenu] = useState('today')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -169,6 +218,15 @@ export default function CoachDashboard() {
         router.push('/dashboard/student')
         return
       }
+
+      // coachesテーブルからcoachIdを取得
+      const { data: coach } = await supabase
+        .from('coaches')
+        .select('id')
+        .eq('id', session.user.id)
+        .single()
+      if (coach) setCoachId(coach.id)
+
       setUser(session.user)
       setLoading(false)
     })
@@ -297,6 +355,16 @@ export default function CoachDashboard() {
               </>
             )}
 
+            {activeMenu === 'availability' && (
+              <>
+                <div className="mb-6">
+                  <h1 className="text-xl font-bold text-[#0C447C]">受講可能時間の設定</h1>
+                  <p className="text-sm text-gray-400 mt-0.5">トップページに表示される受講可能時間を設定します</p>
+                </div>
+                <AvailabilitySettings coachId={coachId} />
+              </>
+            )}
+
             {activeMenu === 'approvals' && (
               <>
                 <div className="mb-6">
@@ -331,7 +399,7 @@ export default function CoachDashboard() {
               </>
             )}
 
-            {activeMenu !== 'today' && activeMenu !== 'approvals' && (
+            {activeMenu !== 'today' && activeMenu !== 'approvals' && activeMenu !== 'availability' && (
               <>
                 <div className="mb-6">
                   <h1 className="text-xl font-bold text-[#0C447C]">
@@ -347,12 +415,7 @@ export default function CoachDashboard() {
 
           </div>
         </main>
-
       </div>
     </div>
   )
 }
-
-
-
-
