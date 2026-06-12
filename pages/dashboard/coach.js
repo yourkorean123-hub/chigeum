@@ -175,7 +175,7 @@ function AvailabilitySettings({ coachId }) {
       </div>
       <div className="overflow-x-auto select-none">
         <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 480 }}>
-          <thead>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
             <tr>
               <th style={{ width: 52, background: '#f8f8f8', border: '0.5px solid #e8e8e8', fontSize: 11, padding: '4px 0' }} />
               {DAYS.map((d, di) => (
