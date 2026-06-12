@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
@@ -114,6 +114,8 @@ function AvailabilitySettings({ coachId }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [dragging, setDragging] = useState(null)
+  const scrollRef = useRef(null)
+  const headerRef = useRef(null)
 
   useEffect(() => {
     if (!coachId) return
@@ -128,6 +130,13 @@ function AvailabilitySettings({ coachId }) {
       setLoading(false)
     })
   }, [coachId])
+
+  // 横スクロール同期
+  const handleScroll = () => {
+    if (headerRef.current && scrollRef.current) {
+      headerRef.current.scrollLeft = scrollRef.current.scrollLeft
+    }
+  }
 
   const toggle = useCallback((k) => { setGrid(prev => ({ ...prev, [k]: !prev[k] })); setSaved(false) }, [])
 
@@ -160,6 +169,9 @@ function AvailabilitySettings({ coachId }) {
   const openCount = Object.values(grid).filter(Boolean).length
   if (loading) return <p className="text-sm text-gray-400">読み込み中...</p>
 
+  const COL_W = 68
+  const TIME_W = 52
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 md:p-6" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
       <p className="text-sm text-gray-500 mb-4">受講できる時間帯をクリック（またはドラッグ）でオープンにしてください。</p>
@@ -173,29 +185,37 @@ function AvailabilitySettings({ coachId }) {
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-gray-100 border border-gray-200" />クローズ</span>
         </div>
       </div>
-      <div className="overflow-x-auto select-none">
-        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 480 }}>
-          <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+
+      {/* 固定ヘッダー */}
+      <div ref={headerRef} style={{ overflowX: 'hidden', minWidth: 0 }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: TIME_W + COL_W * 7 }}>
+          <thead>
             <tr>
-              <th style={{ width: 52, background: '#f8f8f8', border: '0.5px solid #e8e8e8', fontSize: 11, padding: '4px 0' }} />
+              <th style={{ width: TIME_W, background: '#f8f8f8', border: '0.5px solid #e8e8e8', fontSize: 11, padding: '4px 0' }} />
               {DAYS.map((d, di) => (
-                <th key={di} style={{ background: '#f8f8f8', border: '0.5px solid #e8e8e8', fontSize: 12, fontWeight: 500, color: '#666', padding: '4px 0', textAlign: 'center', width: 68 }}>
+                <th key={di} style={{ background: '#f8f8f8', border: '0.5px solid #e8e8e8', fontSize: 12, fontWeight: 500, color: '#666', padding: '4px 0', textAlign: 'center', width: COL_W }}>
                   {d}<br /><input type="checkbox" style={{ marginTop: 2 }} onChange={e => toggleCol(di, e.target.checked)} />
                 </th>
               ))}
             </tr>
           </thead>
+        </table>
+      </div>
+
+      {/* スクロール可能なボディ */}
+      <div ref={scrollRef} onScroll={handleScroll} className="overflow-x-auto select-none" style={{ maxHeight: 400, overflowY: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: TIME_W + COL_W * 7 }}>
           <tbody>
             {SLOTS.map(({ h, m }) => (
               <tr key={`${h}-${m}`}>
-                <td style={{ border: '0.5px solid #e8e8e8', background: '#f8f8f8', textAlign: 'center', fontSize: m === 0 ? 11 : 10, fontWeight: m === 0 ? 600 : 400, color: m === 0 ? '#555' : '#bbb', padding: '0 4px', whiteSpace: 'nowrap' }}>
+                <td style={{ border: '0.5px solid #e8e8e8', background: '#f8f8f8', textAlign: 'center', fontSize: m === 0 ? 11 : 10, fontWeight: m === 0 ? 600 : 400, color: m === 0 ? '#555' : '#bbb', padding: '0 4px', whiteSpace: 'nowrap', width: TIME_W }}>
                   {m === 0 ? `${h}時` : `${h}:${String(m).padStart(2, '0')}`}
                 </td>
                 {DAYS.map((_, di) => {
                   const k = `${di}-${h}-${m}`
                   return (
                     <td key={di} onMouseDown={() => handleMouseDown(k)} onMouseEnter={() => handleMouseEnter(k)}
-                      style={{ border: '0.5px solid #e8e8e8', height: 20, cursor: 'pointer', background: grid[k] ? '#e85d4a' : '#fff', transition: 'background 0.08s', userSelect: 'none' }} />
+                      style={{ border: '0.5px solid #e8e8e8', height: 20, cursor: 'pointer', background: grid[k] ? '#e85d4a' : '#fff', transition: 'background 0.08s', userSelect: 'none', width: COL_W }} />
                   )
                 })}
               </tr>
@@ -203,6 +223,7 @@ function AvailabilitySettings({ coachId }) {
           </tbody>
         </table>
       </div>
+
       <div className="flex items-center gap-4 mt-5">
         <button onClick={handleSave} disabled={saving} className="rounded-xl bg-[#A32D2D] px-6 py-2.5 text-sm text-white font-semibold hover:opacity-90 transition disabled:opacity-50">
           {saving ? '保存中...' : '保存する'}
