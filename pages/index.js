@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Head from 'next/head'
+import Link from 'next/link'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { supabase } from '../lib/supabaseClient'
@@ -11,9 +12,9 @@ export default function Home() {
     supabase
       .from('coaches')
       .select('id, name, bio, photo_url, is_active, tags, availability_text')
-  .eq('is_active', true)
-.order('display_order')
-.then(({ data }) => {
+      .eq('is_active', true)
+      .order('display_order')
+      .then(({ data }) => {
         if (data) setCoaches(data)
       })
   }, [])
@@ -67,11 +68,7 @@ export default function Home() {
           <section className="flex items-center justify-center">
             <div className="w-full max-w-md bg-gradient-to-br from-[#fff] to-[#f9fafb] rounded-xl shadow-lg p-6">
               <div className="text-center mb-4">
-                <img
-                  src="/chogori.png"
-                  alt="Chogori"
-                  className="w-[300px] h-[300px] rounded-full object-cover mx-auto"
-                />
+                <img src="/chogori.png" alt="Chogori" className="w-[300px] h-[300px] rounded-full object-cover mx-auto" />
               </div>
               <ul className="space-y-3 text-[#0C447C]">
                 <li>・顔出し不要 — 電話/LINEで完結</li>
@@ -87,11 +84,7 @@ export default function Home() {
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-2xl md:text-3xl font-extrabold text-[#0C447C] mb-10">なぜ多くの人が韓国語を話せないのか？</h2>
           <div className="rounded-3xl bg-white p-8 md:p-12 shadow-lg border border-[#E5E7EB] space-y-8">
-            <p className="text-gray-700 text-lg leading-relaxed">
-              読み書きを頑張ってきたのに、<br />
-              なぜか話せない。<br />
-              その理由に、気づいていますか？
-            </p>
+            <p className="text-gray-700 text-lg leading-relaxed">読み書きを頑張ってきたのに、<br />なぜか話せない。<br />その理由に、気づいていますか？</p>
             <div className="grid grid-cols-3 gap-4">
               <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 py-5 px-3">
                 <p className="text-sm font-semibold mb-1 text-center" style={{ paddingRight: '30px' }}><span className="text-[#0C447C]">読む</span><span className="text-gray-900">より</span></p>
@@ -106,11 +99,7 @@ export default function Home() {
                 <p className="text-2xl font-extrabold text-[#A32D2D] text-center" style={{ paddingLeft: '30px' }}>使う</p>
               </div>
             </div>
-            <p className="text-gray-700 text-lg leading-relaxed">
-              チグムは最初から<br />
-              聞く力と話す力を同時に鍛えます。<br />
-              <span className="font-bold text-[#C8272D]">だから、話せるようになる。</span>
-            </p>
+            <p className="text-gray-700 text-lg leading-relaxed">チグムは最初から<br />聞く力と話す力を同時に鍛えます。<br /><span className="font-bold text-[#C8272D]">だから、話せるようになる。</span></p>
           </div>
         </div>
       </section>
@@ -138,6 +127,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="text-sm text-gray-600">好きなコーチを選択</div>
+              <Link href="/coaches" className="mt-2 inline-block text-xs text-[#A32D2D] font-semibold hover:underline">コーチ一覧を見る →</Link>
             </div>
             <div className="p-4 bg-white border border-gray-200 rounded-2xl">
               <div className="flex items-center gap-3 mb-3">
@@ -167,15 +157,10 @@ export default function Home() {
         <div className="max-w-5xl mx-auto px-6">
           <h2 className="text-2xl font-bold mb-6">ネイティブコーチ紹介</h2>
           <div className="grid md:grid-cols-1 gap-6">
-
             {coaches.map(coach => (
               <div key={coach.id} className="p-6 bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-                  <img
-                    src={coach.photo_url || '/chogori.png'}
-                    alt={coach.name}
-                    className="w-24 h-24 rounded-full object-cover flex-shrink-0"
-                  />
+                  <img src={coach.photo_url || '/chogori.png'} alt={coach.name} className="w-24 h-24 rounded-full object-cover flex-shrink-0" />
                   <div className="text-center sm:text-left">
                     <div className="font-bold text-lg text-[#0C447C]">{coach.name}</div>
                     <div className="text-sm text-gray-500 mb-2">コーチ</div>
@@ -188,17 +173,17 @@ export default function Home() {
                       </div>
                     )}
                     {coach.availability_text && (
-                      <div className="text-xs text-gray-500 space-y-0.5">
+                      <div className="text-xs text-gray-500 space-y-0.5 mb-3">
                         {coach.availability_text.split('\n').map((line, i) => (
                           <div key={i}>{line}</div>
                         ))}
                       </div>
                     )}
+                    <Link href={`/coaches/${coach.id}`} className="inline-block bg-[#A32D2D] text-white text-xs font-semibold px-4 py-1.5 rounded-lg hover:opacity-90 transition">スケジュールを見る →</Link>
                   </div>
                 </div>
               </div>
             ))}
-
             <div className="grid sm:grid-cols-2 gap-6">
               {[
                 { emoji: '🌟', label: 'コーチ募集中', desc: '現在このポジションのコーチを募集しています。' },
@@ -213,15 +198,12 @@ export default function Home() {
                       <div className="font-bold text-lg text-gray-400">{dummy.label}</div>
                       <div className="text-sm text-gray-400 mb-2">Coming Soon</div>
                       <p className="text-sm text-gray-400 leading-relaxed mb-3">{dummy.desc}</p>
-                      <a href="/coach-recruit" className="inline-block text-[11px] bg-gray-200 text-gray-500 font-semibold px-3 py-1 rounded-full hover:bg-[#A32D2D]/10 hover:text-[#A32D2D] transition">
-                        コーチ応募はこちら →
-                      </a>
+                      <a href="/coach-recruit" className="inline-block text-[11px] bg-gray-200 text-gray-500 font-semibold px-3 py-1 rounded-full hover:bg-[#A32D2D]/10 hover:text-[#A32D2D] transition">コーチ応募はこちら →</a>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-
           </div>
         </div>
       </section>
