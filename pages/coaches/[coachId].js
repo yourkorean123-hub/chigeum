@@ -22,6 +22,7 @@ const TIME_W = 52
 
 function ScheduleGrid({ coachId, onSelect }) {
   const [grid, setGrid] = useState({})
+  const [booked, setBooked] = useState({})
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
   const scrollRef = useRef(null)
@@ -39,6 +40,16 @@ function ScheduleGrid({ coachId, onSelect }) {
         setGrid(g)
         setLoading(false)
       })
+    supabase
+      .from('lesson_bookings')
+      .select('day_of_week, hour, minute')
+      .eq('coach_id', coachId)
+      .in('status', ['pending', 'approved'])
+      .then(({ data }) => {
+        const b = {}
+        if (data) data.forEach(({ day_of_week, hour, minute }) => { b[`${day_of_week}-${hour}-${minute}`] = true })
+        setBooked(b)
+      })
   }, [coachId])
 
   const handleScroll = () => {
@@ -48,7 +59,7 @@ function ScheduleGrid({ coachId, onSelect }) {
   }
 
   const handleClick = (k, h, m, di) => {
-    if (!grid[k]) return
+    if (!grid[k] || booked[k]) return
     const sel = { key: k, h, m, di }
     setSelected(sel)
     onSelect(sel)
@@ -65,6 +76,7 @@ function ScheduleGrid({ coachId, onSelect }) {
       <div className="flex gap-4 text-xs text-gray-400 mb-3">
         <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-[#e85d4a]" />申請できる時間</span>
         <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-[#0C447C]" />選択中</span>
+        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-[#aaaaaa]" />予約済み</span>
       </div>
 
       {/* 固定ヘッダー */}
@@ -94,12 +106,14 @@ function ScheduleGrid({ coachId, onSelect }) {
                   const k = `${di}-${h}-${m}`
                   const isOpen = grid[k]
                   const isSelected = selected?.key === k
+                  const isBooked = booked[k]
                   let bg = '#fff'
                   if (isSelected) bg = '#0C447C'
+                  else if (isBooked && isOpen) bg = '#aaaaaa'
                   else if (isOpen) bg = '#e85d4a'
                   return (
                     <td key={di} onClick={() => handleClick(k, h, m, di)}
-                      style={{ border: '0.5px solid #e8e8e8', height: 20, cursor: isOpen ? 'pointer' : 'default', background: bg, transition: 'background 0.08s', width: COL_W }} />
+                      style={{ border: '0.5px solid #e8e8e8', height: 20, cursor: (isOpen && !isBooked) ? 'pointer' : 'default', background: bg, transition: 'background 0.08s', width: COL_W }} />
                   )
                 })}
               </tr>
