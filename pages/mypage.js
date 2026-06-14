@@ -5,6 +5,45 @@ import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { supabase } from '../lib/supabaseClient'
 
+function PasswordChangeForm() {
+  const [newPassword, setNewPassword] = useState('')
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const handleChange = async () => {
+    if (newPassword.length < 6) { setError('6文字以上で入力してください'); return }
+    setSaving(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setSaving(false)
+    if (error) { setError('変更に失敗しました'); return }
+    setMessage('パスワードを変更しました！')
+    setNewPassword('')
+    setError('')
+  }
+
+  return (
+    <div className="space-y-3">
+      <input
+        type="password"
+        value={newPassword}
+        onChange={e => setNewPassword(e.target.value)}
+        placeholder="新しいパスワード（6文字以上）"
+        className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C447C]/30"
+      />
+      {error && <p className="text-xs text-red-500">{error}</p>}
+      {message && <p className="text-xs text-green-600">{message}</p>}
+      <button
+        onClick={handleChange}
+        disabled={saving}
+        className="w-full rounded-xl bg-[#0C447C] px-6 py-2.5 text-sm text-white font-semibold hover:opacity-90 transition disabled:opacity-50"
+      >
+        {saving ? '変更中...' : 'パスワードを変更する'}
+      </button>
+    </div>
+  )
+}
+
 export default function MyPage() {
   const router = useRouter()
   const [user, setUser] = useState(null)
@@ -54,6 +93,13 @@ export default function MyPage() {
             <div>
               <p className="text-sm text-gray-500 mb-1">ログイン中のメールアドレス</p>
               <p className="text-base font-semibold text-gray-800">{user?.email}</p>
+            </div>
+
+            <hr className="border-gray-100" />
+
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-3">パスワードを変更する</p>
+              <PasswordChangeForm />
             </div>
 
             <hr className="border-gray-100" />

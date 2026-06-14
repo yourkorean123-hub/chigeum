@@ -68,7 +68,14 @@ export default function Home() {
           <section className="flex items-center justify-center">
             <div className="w-full max-w-md bg-gradient-to-br from-[#fff] to-[#f9fafb] rounded-xl shadow-lg p-6">
               <div className="text-center mb-4">
-                <img src="/chogori.png" alt="Chogori" className="w-[300px] h-[300px] rounded-full object-cover mx-auto" />
+                <a href="/pronunciation" className="inline-block w-full mb-4 px-6 py-4 rounded-xl text-white font-bold text-lg shadow-lg" style={{ background: 'linear-gradient(135deg, #2E8B3A, #3AAF4A)' }}>
+                  <div className="flex flex-col items-center">
+                    <span className="text-sm font-normal mb-1">🎁 完全無料公開中</span>
+                    <span className="text-xl font-extrabold">発音完全版</span>
+                    <span className="text-xs font-normal mt-1 opacity-90">解説動画・トレーニング・テキスト全部入り</span>
+                  </div>
+                </a>
+                <img src="/chogori.png" alt="Chogori" className="w-[250px] h-[250px] rounded-full object-cover mx-auto" />
               </div>
               <ul className="space-y-3 text-[#0C447C]">
                 <li>・顔出し不要 — 電話/LINEで完結</li>

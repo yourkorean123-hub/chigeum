@@ -11,6 +11,7 @@ const MENU = [
   { id: 'reward',       label: '報酬確認',           icon: '💴' },
   { id: 'availability', label: '受講可能時間の設定', icon: '⚙️' },
   { id: 'approvals',    label: '承認待ち一覧',       icon: '🔓' },
+  { id: 'bookings',    label: '予約申請一覧',        icon: '📩' },
 ]
 
 const MOCK_SCHEDULE = [
@@ -36,6 +37,64 @@ function initGrid() {
   const s = {}
   DAYS.forEach((_, di) => SLOTS.forEach(({ h, m }) => { s[`${di}-${h}-${m}`] = false }))
   return s
+}
+
+function BookingsList({ coachId }) {
+  const [bookings, setBookings] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [processingId, setProcessingId] = useState(null)
+
+  const DAYS = ['日', '月', '火', '水', '木', '金', '土']
+
+  useEffect(() => {
+    if (!coachId) return
+    supabase.from('lesson_bookings').select('*').eq('coach_id', coachId).order('created_at', { ascending: false }).then(({ data }) => {
+      setBookings(data || [])
+      setLoading(false)
+    })
+  }, [coachId])
+
+  const handleStatus = async (id, status) => {
+    setProcessingId(id)
+    await supabase.from('lesson_bookings').update({ status }).eq('id', id)
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b))
+    setProcessingId(null)
+  }
+
+  if (loading) return <p className="text-sm text-gray-400">読み込み中...</p>
+  if (bookings.length === 0) return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+      <p className="text-2xl mb-3">📭</p>
+      <p className="text-gray-400 text-sm">予約申請はありません</p>
+    </div>
+  )
+
+  return (
+    <div className="space-y-3">
+      {bookings.map(b => (
+        <div key={b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${b.status === 'pending' ? 'bg-yellow-50 text-yellow-600 border border-yellow-200' : b.status === 'approved' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-red-50 text-red-400 border border-red-200'}`}>
+                  {b.status === 'pending' ? '申請中' : b.status === 'approved' ? '承認済' : '拒否'}
+                </span>
+                <span className="text-xs text-gray-400">{new Date(b.created_at).toLocaleDateString('ja-JP')}</span>
+              </div>
+              <p className="text-sm font-bold text-gray-800">{DAYS[b.day_of_week]}曜日 {b.hour}:{String(b.minute).padStart(2,'0')} （{b.duration_min}分）</p>
+              <p className="text-xs text-gray-500 mt-0.5">{b.method} / {b.contact}</p>
+            </div>
+            {b.status === 'pending' && (
+              <div className="flex gap-2 flex-shrink-0">
+                <button onClick={() => handleStatus(b.id, 'approved')} disabled={processingId === b.id} className="rounded-xl bg-[#0C447C] px-3 py-1.5 text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-50">承認</button>
+                <button onClick={() => handleStatus(b.id, 'rejected')} disabled={processingId === b.id} className="rounded-xl bg-gray-200 px-3 py-1.5 text-gray-600 text-xs font-bold hover:opacity-90 transition disabled:opacity-50">拒否</button>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 function ReviewModal({ session, onClose, onSave }) {
@@ -346,7 +405,13 @@ export default function CoachDashboard() {
                 )}
               </>
             )}
-            {activeMenu !== 'today' && activeMenu !== 'approvals' && activeMenu !== 'availability' && (
+            {activeMenu === 'bookings' && (
+              <>
+                <div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">予約申請一覧</h1><p className="text-sm text-gray-400 mt-0.5">生徒からのレッスン予約申請です</p></div>
+                <BookingsList coachId={coachId} />
+              </>
+            )}
+            {activeMenu !== 'today' && activeMenu !== 'approvals' && activeMenu !== 'availability' && activeMenu !== 'bookings' && (
               <>
                 <div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">{MENU.find(m => m.id === activeMenu)?.label}</h1></div>
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
