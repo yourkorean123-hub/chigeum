@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import Header from '../../components/Header'
@@ -17,11 +17,15 @@ function getSlots() {
   return slots
 }
 const SLOTS = getSlots()
+const COL_W = 68
+const TIME_W = 52
 
 function ScheduleGrid({ coachId, onSelect }) {
   const [grid, setGrid] = useState({})
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
+  const scrollRef = useRef(null)
+  const headerRef = useRef(null)
 
   useEffect(() => {
     if (!coachId) return
@@ -36,6 +40,12 @@ function ScheduleGrid({ coachId, onSelect }) {
         setLoading(false)
       })
   }, [coachId])
+
+  const handleScroll = () => {
+    if (headerRef.current && scrollRef.current) {
+      headerRef.current.scrollLeft = scrollRef.current.scrollLeft
+    }
+  }
 
   const handleClick = (k, h, m, di) => {
     if (!grid[k]) return
@@ -56,20 +66,28 @@ function ScheduleGrid({ coachId, onSelect }) {
         <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-[#e85d4a]" />申請できる時間</span>
         <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-[#0C447C]" />選択中</span>
       </div>
-      <div className="overflow-x-auto">
-        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 480 }}>
+
+      {/* 固定ヘッダー */}
+      <div ref={headerRef} style={{ overflowX: 'hidden', minWidth: 0 }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: TIME_W + COL_W * 7 }}>
           <thead>
             <tr>
-              <th style={{ width: 52, background: '#f8f8f8', border: '0.5px solid #e8e8e8', fontSize: 11, padding: '4px 0' }} />
+              <th style={{ width: TIME_W, background: '#f8f8f8', border: '0.5px solid #e8e8e8', fontSize: 11, padding: '4px 0' }} />
               {DAYS.map((d, di) => (
-                <th key={di} style={{ background: '#f8f8f8', border: '0.5px solid #e8e8e8', fontSize: 12, fontWeight: 500, color: '#666', padding: '6px 0', textAlign: 'center', width: 68 }}>{d}</th>
+                <th key={di} style={{ background: '#f8f8f8', border: '0.5px solid #e8e8e8', fontSize: 12, fontWeight: 500, color: '#666', padding: '6px 0', textAlign: 'center', width: COL_W }}>{d}</th>
               ))}
             </tr>
           </thead>
+        </table>
+      </div>
+
+      {/* スクロール可能なボディ */}
+      <div ref={scrollRef} onScroll={handleScroll} className="overflow-x-auto" style={{ maxHeight: 400, overflowY: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: TIME_W + COL_W * 7 }}>
           <tbody>
             {SLOTS.map(({ h, m }) => (
               <tr key={`${h}-${m}`}>
-                <td style={{ border: '0.5px solid #e8e8e8', background: '#f8f8f8', textAlign: 'center', fontSize: m === 0 ? 11 : 10, fontWeight: m === 0 ? 600 : 400, color: m === 0 ? '#555' : '#bbb', padding: '0 4px', whiteSpace: 'nowrap' }}>
+                <td style={{ border: '0.5px solid #e8e8e8', background: '#f8f8f8', textAlign: 'center', fontSize: m === 0 ? 11 : 10, fontWeight: m === 0 ? 600 : 400, color: m === 0 ? '#555' : '#bbb', padding: '0 4px', whiteSpace: 'nowrap', width: TIME_W }}>
                   {m === 0 ? `${h}時` : `${h}:${String(m).padStart(2, '0')}`}
                 </td>
                 {DAYS.map((_, di) => {
@@ -81,7 +99,7 @@ function ScheduleGrid({ coachId, onSelect }) {
                   else if (isOpen) bg = '#e85d4a'
                   return (
                     <td key={di} onClick={() => handleClick(k, h, m, di)}
-                      style={{ border: '0.5px solid #e8e8e8', height: 20, cursor: isOpen ? 'pointer' : 'default', background: bg, transition: 'background 0.08s' }} />
+                      style={{ border: '0.5px solid #e8e8e8', height: 20, cursor: isOpen ? 'pointer' : 'default', background: bg, transition: 'background 0.08s', width: COL_W }} />
                   )
                 })}
               </tr>
