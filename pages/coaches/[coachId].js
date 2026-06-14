@@ -123,6 +123,21 @@ function BookingModal({ coach, slot, onClose, onDone }) {
     setSubmitting(true)
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { setError('ログインが必要です'); setSubmitting(false); return }
+
+    // 重複チェック
+    const { data: existing } = await supabase.from('lesson_bookings')
+      .select('id')
+      .eq('coach_id', coach.id)
+      .eq('day_of_week', slot.di)
+      .eq('hour', slot.h)
+      .eq('minute', slot.m)
+      .in('status', ['pending', 'approved'])
+    if (existing && existing.length > 0) {
+      setError('この時間はすでに予約が入っています。別の時間を選んでください。')
+      setSubmitting(false)
+      return
+    }
+
     const { error: err } = await supabase.from('lesson_bookings').insert({
       student_id: session.user.id, coach_id: coach.id,
       day_of_week: slot.di, hour: slot.h, minute: slot.m,
