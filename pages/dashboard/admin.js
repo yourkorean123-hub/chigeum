@@ -63,6 +63,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [activeMenu, setActiveMenu] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [coaches, setCoaches] = useState([])
+  const [coachesLoading, setCoachesLoading] = useState(false)
+  const [actionLoading, setActionLoading] = useState(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -82,6 +85,34 @@ export default function AdminDashboard() {
       setLoading(false)
     })
   }, [])
+
+  useEffect(() => {
+    if (activeMenu === 'coaches') fetchCoaches()
+  }, [activeMenu])
+
+  const fetchCoaches = async () => {
+    setCoachesLoading(true)
+    const { data } = await supabase
+      .from('coaches')
+      .select('id, name, bio, photo_url, is_active, created_at')
+      .order('created_at', { ascending: false })
+    setCoaches(data || [])
+    setCoachesLoading(false)
+  }
+
+  const handleApprove = async (coachId) => {
+    setActionLoading(coachId + '_approve')
+    await supabase.from('coaches').update({ is_active: true }).eq('id', coachId)
+    await fetchCoaches()
+    setActionLoading(null)
+  }
+
+  const handleRevoke = async (coachId) => {
+    setActionLoading(coachId + '_revoke')
+    await supabase.from('coaches').update({ is_active: false }).eq('id', coachId)
+    await fetchCoaches()
+    setActionLoading(null)
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -170,7 +201,101 @@ export default function AdminDashboard() {
               </>
             )}
 
-            {activeMenu !== 'dashboard' && (
+            {activeMenu === 'coaches' && (
+              <>
+                <div className="mb-6">
+                  <h1 className="text-xl font-bold text-[#0C447C]">コーチ管理</h1>
+                  <p className="text-sm text-gray-400 mt-0.5">コーチの承認・管理を行います</p>
+                </div>
+
+                {coachesLoading ? (
+                  <div className="text-center py-10 text-gray-400 text-sm">読み込み中...</div>
+                ) : (
+                  <>
+                    {/* 承認待ち */}
+                    <div className="mb-8">
+                      <h2 className="text-sm font-bold text-[#A32D2D] uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <span>⏳</span> 承認待ち
+                        <span className="bg-[#A32D2D] text-white text-[10px] px-2 py-0.5 rounded-full">
+                          {coaches.filter(c => !c.is_active).length}
+                        </span>
+                      </h2>
+                      {coaches.filter(c => !c.is_active).length === 0 ? (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center text-sm text-gray-400">
+                          承認待ちのコーチはいません
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {coaches.filter(c => !c.is_active).map(coach => (
+                            <div key={coach.id} className="bg-white rounded-2xl border border-orange-100 shadow-sm p-5 flex items-center gap-4">
+                              {coach.photo_url ? (
+                                <img src={coach.photo_url} alt={coach.name} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-xl">👤</div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-gray-800">{coach.name}</p>
+                                <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{coach.bio}</p>
+                                <p className="text-[10px] text-gray-300 mt-1">
+                                  登録日：{new Date(coach.created_at).toLocaleDateString('ja-JP')}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleApprove(coach.id)}
+                                disabled={actionLoading === coach.id + '_approve'}
+                                className="flex-shrink-0 bg-[#0C447C] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:opacity-90 transition disabled:opacity-50"
+                              >
+                                {actionLoading === coach.id + '_approve' ? '処理中...' : '✓ 承認する'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 承認済み */}
+                    <div>
+                      <h2 className="text-sm font-bold text-[#1E7E3E] uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <span>✅</span> 承認済みコーチ
+                        <span className="bg-[#1E7E3E] text-white text-[10px] px-2 py-0.5 rounded-full">
+                          {coaches.filter(c => c.is_active).length}
+                        </span>
+                      </h2>
+                      {coaches.filter(c => c.is_active).length === 0 ? (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center text-sm text-gray-400">
+                          承認済みのコーチはまだいません
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {coaches.filter(c => c.is_active).map(coach => (
+                            <div key={coach.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+                              {coach.photo_url ? (
+                                <img src={coach.photo_url} alt={coach.name} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-xl">👤</div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-gray-800">{coach.name}</p>
+                                <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{coach.bio}</p>
+                              </div>
+                              <button
+                                onClick={() => handleRevoke(coach.id)}
+                                disabled={actionLoading === coach.id + '_revoke'}
+                                className="flex-shrink-0 border border-gray-200 text-gray-500 text-sm px-4 py-2 rounded-xl hover:bg-gray-50 transition disabled:opacity-50"
+                              >
+                                {actionLoading === coach.id + '_revoke' ? '処理中...' : '承認取消'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {activeMenu !== 'dashboard' && activeMenu !== 'coaches' && (
               <>
                 <div className="mb-6">
                   <h1 className="text-xl font-bold text-[#0C447C]">
