@@ -224,10 +224,11 @@ export default function StudentDashboard() {
               </div>}
 
               {/* カレンダー */}
+              {hasBooking &&
               <div className="mb-6">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">練習カレンダー</h2>
                 <CalendarWidget />
-              </div>
+              </div>}
 
               {/* クイックアクション */}
               <div>
