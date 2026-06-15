@@ -76,7 +76,7 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true)
   const [activeMenu, setActiveMenu] = useState('home')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
+  const [hasBooking, setHasBooking] = useState(null)
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
@@ -84,6 +84,9 @@ export default function StudentDashboard() {
       } else {
         setUser(session.user)
         setLoading(false)
+          supabase.from('bookings').select('id').eq('student_id', session.user.id).then(({ data }) => {
+            setHasBooking(data && data.length > 0)
+          })
       }
     })
   }, [])
@@ -165,7 +168,25 @@ export default function StudentDashboard() {
         {/* メインコンテンツ */}
         <main className="flex-1 p-4 md:p-8 min-w-0">
 
-          {activeMenu === 'home' && (
+          {hasBooking === false && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">👋</span>
+                  <div>
+                    <p className="font-bold text-yellow-800 text-sm">まずコーチを選びましょう！</p>
+                    <p className="text-yellow-600 text-xs mt-0.5">コーチを選ぶと練習予約ができるようになります。</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveMenu('booking')}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold text-xs px-4 py-2 rounded-xl transition"
+                >
+                  コーチを選ぶ →
+                </button>
+              </div>
+            )}
+
+            {activeMenu === 'home' && (
             <div className="max-w-3xl">
               <div className="mb-6">
                 <h1 className="text-xl font-bold text-[#0C447C]">ホーム</h1>
