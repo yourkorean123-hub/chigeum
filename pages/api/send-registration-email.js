@@ -23,7 +23,7 @@ export default async function handler(req, res) {
           <!-- ヘッダー -->
           <div style="background: #ffffff; padding: 40px 32px 24px;">
             <h1 style="font-size: 24px; color: #222; margin: 0 0 8px;">チグム</h1>
-            <p style="font-size: 13px; color: #888; margin: 0;">韓国語コーチングサービス</p>
+            <p style="font-size: 13px; color: #888; margin: 0;">電話韓国語サービス</p>
           </div>
 
           <!-- メイン -->
