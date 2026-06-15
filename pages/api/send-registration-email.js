@@ -74,7 +74,7 @@ export default async function handler(req, res) {
     await fetch('https://utage-system.com/r/ztLfbPHWf5vz/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ email: email, name: name }),
+      body: new URLSearchParams({ mail: email, name: name }),
     });
 
     return res.status(200).json({ success: true });
