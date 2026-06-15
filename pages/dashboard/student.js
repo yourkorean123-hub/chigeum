@@ -194,7 +194,7 @@ export default function StudentDashboard() {
               </div>
 
               {/* ステータスカード */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              {hasBooking && <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">次回練習</p>
                   <p className="text-base font-bold text-[#0C447C]">6月5日（木）</p>
@@ -221,7 +221,7 @@ export default function StudentDashboard() {
                   </div>
                   <p className="text-xs text-gray-400 mt-2">有効期限：2026年7月末</p>
                 </div>
-              </div>
+              </div>}
 
               {/* カレンダー */}
               <div className="mb-6">
