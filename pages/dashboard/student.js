@@ -168,13 +168,13 @@ function SchedulePicker({ studentId }) {
       )}
 
       {selected && (
-        <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, currency: 'JPY' }}>
+        <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, currency: 'USD' }}>
           <PayPalButtons
             style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }}
             createOrder={(data, actions) => {
               return actions.order.create({
                 purchase_units: [{
-                  amount: { value: '6080', currency_code: 'JPY' },
+                  amount: { value: '40', currency_code: 'USD' },
                   description: '電話韓国語チグム 月額料金',
                 }],
               })
