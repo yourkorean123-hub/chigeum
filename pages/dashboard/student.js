@@ -70,6 +70,113 @@ function CalendarWidget() {
   )
 }
 
+const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土']
+
+function SchedulePicker({ studentId }) {
+  const [schedule, setSchedule] = useState([])
+  const [coachName, setCoachName] = useState('')
+  const [coachId, setCoachId] = useState(null)
+  const [selected, setSelected] = useState(null)
+  const [booking, setBooking] = useState(false)
+  const [done, setDone] = useState(false)
+  const [profile, setProfile] = useState(null)
+
+  useEffect(() => {
+    if (!studentId) return
+    supabase.from('profiles').select('coach_id, line_id').eq('id', studentId).single().then(({ data }) => {
+      if (!data?.coach_id) return
+      setProfile(data)
+      setCoachId(data.coach_id)
+      supabase.from('coaches').select('name').eq('id', data.coach_id).single().then(({ data: c }) => {
+        setCoachName(c?.name || '')
+      })
+      supabase.from('coach_schedule').select('*').eq('coach_id', data.coach_id).eq('is_open', true).order('day_of_week').order('hour').order('minute').then(({ data: slots }) => {
+        setSchedule(slots || [])
+      })
+    })
+  }, [studentId])
+
+  const grouped = schedule.reduce((acc, slot) => {
+    const key = slot.day_of_week
+    if (!acc[key]) acc[key] = []
+    acc[key].push(slot)
+    return acc
+  }, {})
+
+  const handleBook = async () => {
+    if (!selected || !studentId || !coachId) return
+    setBooking(true)
+    await supabase.from('lesson_bookings').insert({
+      student_id: studentId,
+      coach_id: coachId,
+      day_of_week: selected.day_of_week,
+      hour: selected.hour,
+      minute: selected.minute,
+      duration_min: 10,
+      method: 'LINE',
+      contact: profile?.line_id || '',
+      status: 'pending',
+    })
+    setBooking(false)
+    setDone(true)
+  }
+
+  if (done) return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+      <p className="text-4xl mb-4">🎉</p>
+      <p className="font-bold text-[#0C447C] text-lg mb-2">予約リクエストを送りました！</p>
+      <p className="text-sm text-gray-500">コーチから確認の連絡が届きます。</p>
+    </div>
+  )
+
+  if (schedule.length === 0) return (
+    <p className="text-sm text-gray-400">コーチのスケジュールを読み込み中...</p>
+  )
+
+  return (
+    <div>
+      <p className="text-sm text-gray-500 mb-4">担当コーチ：<span className="font-bold text-[#0C447C]">{coachName}</span> の空き時間から選んでください。</p>
+      <div className="space-y-4 mb-6">
+        {Object.keys(grouped).sort().map(day => (
+          <div key={day} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <p className="font-bold text-[#0C447C] text-sm mb-3">{DAY_NAMES[day]}曜日</p>
+            <div className="flex flex-wrap gap-2">
+              {grouped[day].map(slot => {
+                const isSelected = selected?.day_of_week === slot.day_of_week && selected?.hour === slot.hour && selected?.minute === slot.minute
+                return (
+                  <button
+                    key={slot.id}
+                    onClick={() => setSelected(slot)}
+                    className={`rounded-xl px-3 py-1.5 text-sm font-semibold border transition ${isSelected ? 'bg-[#A32D2D] text-white border-[#A32D2D]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#A32D2D]'}`}
+                  >
+                    {String(slot.hour).padStart(2,'0')}:{String(slot.minute).padStart(2,'0')}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {selected && (
+        <div className="bg-[#FFF8E1] border border-[#FFE082] rounded-2xl p-5 mb-4">
+          <p className="font-bold text-yellow-800 mb-1">選択中の時間</p>
+          <p className="text-sm text-yellow-700">{DAY_NAMES[selected.day_of_week]}曜日 {String(selected.hour).padStart(2,'0')}:{String(selected.minute).padStart(2,'0')}〜</p>
+          <p className="text-xs text-yellow-600 mt-1">毎週この時間に10分間の練習を行います</p>
+        </div>
+      )}
+
+      <button
+        onClick={handleBook}
+        disabled={!selected || booking}
+        className="w-full bg-[#A32D2D] text-white font-bold py-3 rounded-2xl hover:opacity-90 transition disabled:opacity-40"
+      >
+        {booking ? '送信中...' : 'この時間で予約する'}
+      </button>
+    </div>
+  )
+}
+
 function CoachList({ studentId }) {
   const [coaches, setCoaches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -324,8 +431,13 @@ export default function StudentDashboard() {
 
           {activeMenu === 'booking' && (
             <div className="max-w-3xl">
-              <h1 className="text-xl font-bold text-[#0C447C] mb-6">コーチを選ぶ</h1>
-              <CoachList studentId={user?.id} />
+              <h1 className="text-xl font-bold text-[#0C447C] mb-6">
+                {hasBooking ? '練習時間を選ぶ' : 'コーチを選ぶ'}
+              </h1>
+              {hasBooking
+                ? <SchedulePicker studentId={user?.id} />
+                : <CoachList studentId={user?.id} />
+              }
             </div>
           )}
 
