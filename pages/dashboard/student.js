@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabaseClient'
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 
 const MENU = [
   { id: 'home',     label: 'ホーム',        icon: '🏠' },
@@ -166,13 +167,29 @@ function SchedulePicker({ studentId }) {
         </div>
       )}
 
-      <button
-        onClick={handleBook}
-        disabled={!selected || booking}
-        className="w-full bg-[#A32D2D] text-white font-bold py-3 rounded-2xl hover:opacity-90 transition disabled:opacity-40"
-      >
-        {booking ? '送信中...' : 'この時間で予約する'}
-      </button>
+      {selected && (
+        <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, currency: 'JPY' }}>
+          <PayPalButtons
+            style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }}
+            createOrder={(data, actions) => {
+              return actions.order.create({
+                purchase_units: [{
+                  amount: { value: '6080', currency_code: 'JPY' },
+                  description: '電話韓国語チグム 月額料金',
+                }],
+              })
+            }}
+            onApprove={async (data, actions) => {
+              await actions.order.capture()
+              handleBook()
+            }}
+            onError={(err) => {
+              console.error('PayPal error:', err)
+              alert('決済でエラーが発生しました。もう一度お試しください。')
+            }}
+          />
+        </PayPalScriptProvider>
+      )}
     </div>
   )
 }
