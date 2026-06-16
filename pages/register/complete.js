@@ -8,7 +8,7 @@ export default function RegisterComplete() {
     <div>
       <Head>
         <title>入部届受付完了 | 電話韓国語 チグム</title>
-        <meta name="description" content="入部届を受け付けました。担当者からのご連絡をお待ちください。" />
+        <meta name="description" content="入部届を受け付けました。メールをご確認のうえ、さっそく練習を始めましょう！" />
       </Head>
 
       <Header />
@@ -34,14 +34,12 @@ export default function RegisterComplete() {
             </div>
 
             <div className="rounded-2xl bg-[#C8272D]/5 border border-[#C8272D]/20 p-8 mb-8">
-              <svg className="w-6 h-6 text-[#1E6BB8] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <div className="text-4xl mb-3">🎉</div>
               <p className="text-gray-800 font-semibold mb-2">
-                担当者より24時間以内にご連絡いたします。
+                ようこそ、チグムへ！
               </p>
               <p className="text-sm text-gray-600">
-                登録いただいたメールアドレス、または電話番号/LINE IDにてご連絡差し上げます。
+                韓国語の旅、いよいよスタートです。<br />メールをご確認のうえ、さっそく練習を始めましょう！
               </p>
             </div>
 

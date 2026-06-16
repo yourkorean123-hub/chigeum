@@ -13,6 +13,18 @@ const supabase = createClient(
 export default function Register() {
   const router = useRouter()
   const [callMethod, setCallMethod] = useState('phone')
+  const [course, setCourse] = useState('')
+  const [frequency, setFrequency] = useState('')
+  const [duration, setDuration] = useState('')
+
+  const calcPrice = () => {
+    const pricePerSession = course === '10min' ? 800 : course === '20min' ? 1600 : null
+    const sessionsPerMonth = { weekly1: 4, weekly2: 8, weekly3: 12, daily: 30 }[frequency] || null
+    if (!pricePerSession || !sessionsPerMonth) return null
+    const monthly = pricePerSession * sessionsPerMonth
+    return duration === '3months' ? Math.floor(monthly * 0.95) : monthly
+  }
+  const price = calcPrice()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -160,7 +172,7 @@ export default function Register() {
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="course">希望コース（必須）</label>
-                    <select id="course" name="course" required className="w-full rounded-2xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50">
+                    <select id="course" name="course" required onChange={(e) => setCourse(e.target.value)} className="w-full rounded-2xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50">
                       <option value="">選択してください</option>
                       <option value="10min">10分コース（¥800/回）</option>
                       <option value="20min">20分コース（¥1,600/回）</option>
@@ -168,7 +180,7 @@ export default function Register() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="frequency">練習頻度（必須）</label>
-                    <select id="frequency" name="frequency" required className="w-full rounded-2xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50">
+                    <select id="frequency" name="frequency" required onChange={(e) => setFrequency(e.target.value)} className="w-full rounded-2xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50">
                       <option value="">選択してください</option>
                       <option value="weekly1">週1回</option>
                       <option value="weekly2">週2回</option>
@@ -179,13 +191,20 @@ export default function Register() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="duration">申し込み期間（必須）</label>
-                  <select id="duration" name="duration" required className="w-full rounded-2xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50">
+                  <select id="duration" name="duration" required onChange={(e) => setDuration(e.target.value)} className="w-full rounded-2xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50">
                     <option value="">選択してください</option>
                     <option value="1month">1ヶ月</option>
                     <option value="3months">3ヶ月（5%割引）</option>
                   </select>
                 </div>
-                <div className="flex items-start gap-3">
+                {price && (
+  <div className="rounded-2xl bg-[#FFF8E1] border border-[#FFE082] px-6 py-4 text-center">
+    <p className="text-sm text-gray-600 mb-1">月額料金</p>
+    <p className="text-2xl font-bold text-[#C8272D]">¥{price.toLocaleString()}<span className="text-base font-normal text-gray-600">/月</span></p>
+    {duration === '3months' && <p className="text-xs text-[#F57F17] mt-1">3ヶ月プラン適用中（5%割引）</p>}
+  </div>
+)}
+<div className="flex items-start gap-3">
                   <input id="terms" name="terms" type="checkbox" required className="mt-1 h-4 w-4 accent-[#C8272D]" />
                   <label htmlFor="terms" className="text-sm text-gray-700">利用規約に同意します（必須）</label>
                 </div>

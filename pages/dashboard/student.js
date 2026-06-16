@@ -70,6 +70,75 @@ function CalendarWidget() {
   )
 }
 
+function CoachList({ studentId }) {
+  const [coaches, setCoaches] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selecting, setSelecting] = useState(null)
+  const [selected, setSelected] = useState(null)
+
+  useEffect(() => {
+    supabase.from('coaches').select('*').eq('is_active', true).order('display_order').then(({ data }) => {
+      setCoaches(data || [])
+      setLoading(false)
+    })
+    if (studentId) {
+      supabase.from('profiles').select('coach_id').eq('id', studentId).single().then(({ data }) => {
+        if (data) setSelected(data.coach_id)
+      })
+    }
+  }, [studentId])
+
+  const handleSelect = async (coachId) => {
+    if (!studentId) return
+    setSelecting(coachId)
+    await supabase.from('profiles').update({ coach_id: coachId }).eq('id', studentId)
+    setSelected(coachId)
+    setSelecting(null)
+    window.location.reload()
+  }
+
+  if (loading) return <p className="text-sm text-gray-400">読み込み中...</p>
+  if (coaches.length === 0) return <p className="text-sm text-gray-400">現在コーチは登録されていません</p>
+
+  return (
+    <div className="space-y-4">
+      {coaches.map(coach => (
+        <div key={coach.id} className={`bg-white rounded-2xl border shadow-sm p-6 ${selected === coach.id ? 'border-[#A32D2D]' : 'border-gray-100'}`}>
+          <div className="flex gap-4">
+            {coach.photo_url ? (
+              <img src={coach.photo_url} alt={coach.name} className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-2xl">👤</div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-bold text-[#0C447C] text-base">{coach.name}</h3>
+                {selected === coach.id && <span className="text-[11px] bg-[#A32D2D]/10 text-[#A32D2D] font-semibold px-2 py-0.5 rounded-full">選択中</span>}
+              </div>
+              {coach.bio && <p className="text-sm text-gray-600 mb-2">{coach.bio}</p>}
+              {coach.availability_text && <p className="text-xs text-gray-400 mb-2">🕐 {coach.availability_text}</p>}
+              {coach.tags && coach.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {coach.tags.map((tag, i) => (
+                    <span key={i} className="text-[11px] bg-[#0C447C]/10 text-[#0C447C] px-2 py-0.5 rounded-full">{tag}</span>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={() => handleSelect(coach.id)}
+                disabled={selecting === coach.id || selected === coach.id}
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${selected === coach.id ? 'bg-gray-100 text-gray-400 cursor-default' : 'bg-[#A32D2D] text-white hover:opacity-90'} disabled:opacity-50`}
+              >
+                {selecting === coach.id ? '処理中...' : selected === coach.id ? '選択済み' : 'このコーチを選ぶ'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function StudentDashboard() {
   const router = useRouter()
   const [user, setUser] = useState(null)
@@ -84,8 +153,8 @@ export default function StudentDashboard() {
       } else {
         setUser(session.user)
         setLoading(false)
-          supabase.from('bookings').select('id').eq('student_id', session.user.id).then(({ data }) => {
-            setHasBooking(data && data.length > 0)
+          supabase.from('profiles').select('coach_id').eq('id', session.user.id).single().then(({ data }) => {
+            setHasBooking(!!(data && data.coach_id))
           })
       }
     })
@@ -253,7 +322,14 @@ export default function StudentDashboard() {
             </div>
           )}
 
-          {activeMenu !== 'home' && (
+          {activeMenu === 'booking' && (
+            <div className="max-w-3xl">
+              <h1 className="text-xl font-bold text-[#0C447C] mb-6">コーチを選ぶ</h1>
+              <CoachList studentId={user?.id} />
+            </div>
+          )}
+
+          {activeMenu !== 'home' && activeMenu !== 'booking' && (
             <div className="max-w-3xl">
               <h1 className="text-xl font-bold text-[#0C447C] mb-6">
                 {MENU.find(m => m.id === activeMenu)?.label}
