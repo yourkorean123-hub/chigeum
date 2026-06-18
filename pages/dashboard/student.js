@@ -3,7 +3,8 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabaseClient'
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
+import { loadStripe } from '@stripe/stripe-js'
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
 
 const MENU = [
   { id: 'home',     label: 'ホーム',        icon: '🏠' },
@@ -68,6 +69,56 @@ function CalendarWidget() {
         })}
       </div>
     </div>
+  )
+}
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+
+function CheckoutForm({ amount, onSuccess }) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [paying, setPaying] = useState(false)
+  const [error, setError] = useState(null)
+
+  const handleSubmit = async () => {
+    if (!stripe || !elements) return
+    setPaying(true)
+    setError(null)
+    const card = elements.getElement(CardElement)
+    const { error, paymentMethod } = await stripe.createPaymentMethod({ type: 'card', card })
+    if (error) {
+      setError(error.message)
+      setPaying(false)
+      return
+    }
+    onSuccess()
+    setPaying(false)
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <p className="font-bold text-[#0C447C] mb-1">お支払い情報</p>
+      <p className="text-sm text-gray-500 mb-4">月額 ¥{amount.toLocaleString()}</p>
+      <div className="border border-gray-200 rounded-xl p-3 mb-4">
+        <CardElement options={{ style: { base: { fontSize: '16px' } } }} />
+      </div>
+      {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+      <button
+        onClick={handleSubmit}
+        disabled={!stripe || paying}
+        className="w-full bg-[#A32D2D] text-white font-bold py-3 rounded-2xl hover:opacity-90 transition disabled:opacity-40"
+      >
+        {paying ? '処理中...' : `¥${amount.toLocaleString()} を支払う`}
+      </button>
+    </div>
+  )
+}
+
+function StripeCheckout({ amount, onSuccess }) {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm amount={amount} onSuccess={onSuccess} />
+    </Elements>
   )
 }
 
@@ -168,23 +219,8 @@ function SchedulePicker({ studentId }) {
       )}
 
       {selected && (
-        <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, currency: 'JPY', intent: 'capture' }}>
-          <PayPalButtons
-            style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }}
-            createOrder={(data, actions) => {
-              return actions.order.create({
-                purchase_units: [{
-                  amount: { value: '6080', currency_code: 'JPY' },
-                  description: '電話韓国語チグム 月額料金',
-                }],
-              })
-            }}
-            onApprove={async (data, actions) => {
-              await actions.order.capture()
-              handleBook()
-            }}
-            onError={(err) => {
-              console.error('PayPal error:', err)
+        <StripeCheckout amount={6080} onSuccess={handleBook} />
+      )}
               alert('決済でエラーが発生しました。もう一度お試しください。')
             }}
           />
