@@ -100,7 +100,7 @@ function CheckoutForm({ amount, onSuccess }) {
       <p className="font-bold text-[#0C447C] mb-1">お支払い情報</p>
       <p className="text-sm text-gray-500 mb-4">月額 ¥{amount.toLocaleString()}</p>
       <div className="border border-gray-200 rounded-xl p-3 mb-4">
-        <CardElement options={{ style: { base: { fontSize: '16px' } } }} />
+        <CardElement options={{ hidePostalCode: true, style: { base: { fontSize: '16px' } } }} />
       </div>
       {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
       <button
