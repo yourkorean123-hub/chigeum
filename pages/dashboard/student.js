@@ -221,11 +221,6 @@ function SchedulePicker({ studentId }) {
       {selected && (
         <StripeCheckout amount={6080} onSuccess={handleBook} />
       )}
-              alert('決済でエラーが発生しました。もう一度お試しください。')
-            }}
-          />
-        </PayPalScriptProvider>
-      )}
     </div>
   )
 }
