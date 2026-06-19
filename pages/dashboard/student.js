@@ -133,9 +133,19 @@ function SchedulePicker({ studentId }) {
   const [done, setDone] = useState(false)
   const [profile, setProfile] = useState(null)
 
+  const calcAmount = () => {
+    if (!profile) return null
+    const { course, frequency, duration } = profile
+    const pricePerSession = course === '10min' ? 800 : course === '20min' ? 1600 : null
+    const sessionsPerMonth = { weekly1: 4, weekly2: 8, weekly3: 12, daily: 30 }[frequency] || null
+    if (!pricePerSession || !sessionsPerMonth) return null
+    const monthly = pricePerSession * sessionsPerMonth
+    return duration === '3months' ? Math.floor(monthly * 0.95) : monthly
+  }
+
   useEffect(() => {
     if (!studentId) return
-    supabase.from('profiles').select('coach_id, line_id').eq('id', studentId).single().then(({ data }) => {
+    supabase.from('profiles').select('coach_id, line_id, course, frequency, duration').eq('id', studentId).single().then(({ data }) => {
       if (!data?.coach_id) return
       setProfile(data)
       setCoachId(data.coach_id)
@@ -218,8 +228,13 @@ function SchedulePicker({ studentId }) {
         </div>
       )}
 
-      {selected && (
-        <StripeCheckout amount={6080} onSuccess={handleBook} />
+      {selected && calcAmount() && (
+        <StripeCheckout amount={calcAmount()} onSuccess={handleBook} />
+      )}
+      {selected && !calcAmount() && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center text-sm text-yellow-700">
+          部活費を計算できません。コース・頻度・期間の登録情報を確認してください。
+        </div>
       )}
     </div>
   )

@@ -58,6 +58,16 @@ export default function Register() {
       return
     }
 
+    // コース・頻度・期間をprofilesに保存
+    if (data?.user?.id) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        course,
+        frequency,
+        duration,
+      })
+    }
+
     // メール送信
     await fetch('/api/send-registration-email', {
       method: 'POST',
