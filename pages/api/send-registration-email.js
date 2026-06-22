@@ -1,18 +1,35 @@
-import { Resend } from 'resend';
+import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resendApiKey = process.env.RESEND_API_KEY
+const resendFrom = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
+const resendCcEmail = process.env.RESEND_CC_EMAIL || 'hanlingal-kankaiwa@yourkorean.com'
+
+const resend = resendApiKey ? new Resend(resendApiKey) : null
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { email, name } = req.body;
+  const { email, name } = req.body || {}
+
+  if (!email || !name) {
+    return res.status(400).json({ error: 'Missing email or name' })
+  }
+
+  if (!resend) {
+    return res.status(500).json({
+      error: 'RESEND_API_KEY is not configured'
+    })
+  }
 
   try {
+    const recipients = [email]
+    if (resendCcEmail) recipients.push(resendCcEmail)
+
     await resend.emails.send({
-      from: 'チグム <hanlingal-kankaiwa@yourkorean.com>',
-      to: [email, 'hanlingal-kankaiwa@yourkorean.com'],
+      from: `チグム <${resendFrom}>`,
+      to: recipients,
       subject: '【チグム】登録が完了しました🎉',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
@@ -71,15 +88,22 @@ export default async function handler(req, res) {
       `,
     });
 
-    await fetch('https://utage-system.com/r/ztLfbPHWf5vz/register', {
+    const externalResponse = await fetch('https://utage-system.com/r/ztLfbPHWf5vz/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ mail: email, name: name }),
-    });
+      body: new URLSearchParams({ mail: email, name }),
+    })
 
-    return res.status(200).json({ success: true });
+    if (!externalResponse.ok) {
+      console.warn('External registration endpoint responded with non-OK status:', externalResponse.status)
+    }
+
+    return res.status(200).json({ success: true })
   } catch (error) {
-    console.error('Resend error:', error);
-    return res.status(500).json({ error: error.message });
+    console.error('Resend error:', error)
+    return res.status(500).json({
+      error: 'Failed to send registration email',
+      details: error?.message || 'Unknown error'
+    })
   }
 }

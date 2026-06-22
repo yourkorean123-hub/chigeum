@@ -50,32 +50,59 @@ export default function Register() {
       return
     }
 
-    // Supabaseでアカウント作成
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
-    if (signUpError) {
-      setError('登録に失敗しました: ' + signUpError.message)
-      setSubmitting(false)
-      return
-    }
-
-    // コース・頻度・期間をprofilesに保存
-    if (data?.user?.id) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        course,
-        frequency,
-        duration,
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            furigana,
+            call_method: callMethod,
+            contact,
+          },
+        },
       })
+
+      if (signUpError) {
+        throw signUpError
+      }
+
+      if (!data?.user?.id) {
+        throw new Error('登録情報の取得に失敗しました。')
+      }
+
+      const profileResponse = await fetch('/api/register-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: data.user.id,
+          course,
+          frequency,
+          duration,
+          contact,
+          callMethod,
+        }),
+      })
+
+      const profileResult = await profileResponse.json()
+      if (!profileResponse.ok || profileResult?.error) {
+        throw new Error(profileResult?.error || 'プロフィール保存に失敗しました。')
+      }
+
+      await fetch('/api/send-registration-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, furigana, email, callMethod, contact, course, frequency, duration })
+      })
+
+      router.push('/register/complete')
+    } catch (err) {
+      console.error('[register] submit failed:', err)
+      setError(err?.message || '登録中にエラーが発生しました。')
+    } finally {
+      setSubmitting(false)
     }
-
-    // メール送信
-    await fetch('/api/send-registration-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, furigana, email, callMethod, contact, course, frequency, duration })
-    })
-
-    router.push('/register/complete')
   }
 
   return (
