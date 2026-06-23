@@ -10,8 +10,21 @@ export default function CoachRegisterComplete() {
   const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
-    // detectSessionInUrl: true により、URL の #access_token が自動処理されてセッションが確立される
     const run = async () => {
+      // PKCEフロー対応: URLに ?code=xxx が付いている場合、セッションに交換する
+      const url = new URL(window.location.href)
+      const code = url.searchParams.get('code')
+
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+        if (exchangeError) {
+          setStatus('error')
+          setErrorMsg('リンクの有効期限が切れているか、すでに使用済みです。お手数ですが、もう一度登録をお試しください。')
+          return
+        }
+      }
+
+      // セッション取得
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
       if (sessionError || !session) {
