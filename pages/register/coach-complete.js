@@ -11,13 +11,17 @@ export default function CoachRegisterComplete() {
 
   useEffect(() => {
     const run = async () => {
-      // PKCEフロー対応: URLに ?code=xxx が付いている場合、セッションに交換する
+      // メールリンクの ?token_hash=xxx&type=signup を verifyOtp でセッションに交換する
       const url = new URL(window.location.href)
-      const code = url.searchParams.get('code')
+      const tokenHash = url.searchParams.get('token_hash')
+      const type = url.searchParams.get('type')
 
-      if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-        if (exchangeError) {
+      if (tokenHash && type) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: type,
+        })
+        if (verifyError) {
           setStatus('error')
           setErrorMsg('リンクの有効期限が切れているか、すでに使用済みです。お手数ですが、もう一度登録をお試しください。')
           return
