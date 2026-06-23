@@ -15,7 +15,8 @@
     "next": "16.2.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "resend": "^6.12.4"
+    "resend": "^6.12.4",
+    "stripe": "^22.2.3"
   },
   "devDependencies": {
     "autoprefixer": "10.4.14",

@@ -27,10 +27,8 @@ function CalendarWidget() {
   const cells = Array(firstDay).fill(null).concat(
     Array.from({ length: daysInMonth }, (_, i) => i + 1)
   )
-  // pad to complete last week
   while (cells.length % 7 !== 0) cells.push(null)
 
-  // mock practice days
   const practiceDays = [5, 12, 19, 26]
 
   return (
@@ -84,15 +82,40 @@ function CheckoutForm({ amount, onSuccess }) {
     if (!stripe || !elements) return
     setPaying(true)
     setError(null)
-    const card = elements.getElement(CardElement)
-    const { error, paymentMethod } = await stripe.createPaymentMethod({ type: 'card', card })
-    if (error) {
-      setError(error.message)
+
+    try {
+      // サーバーに PaymentIntent の作成を依頼
+      const res = await fetch('/api/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.clientSecret) {
+        setError(data.error || '決済の初期化に失敗しました')
+        setPaying(false)
+        return
+      }
+
+      // カード情報で実際に課金を確定
+      const card = elements.getElement(CardElement)
+      const { error: confirmError } = await stripe.confirmCardPayment(data.clientSecret, {
+        payment_method: { card },
+      })
+
+      if (confirmError) {
+        setError(confirmError.message)
+        setPaying(false)
+        return
+      }
+
+      // 課金成功
+      onSuccess()
+    } catch (err) {
+      setError('決済処理中にエラーが発生しました')
+    } finally {
       setPaying(false)
-      return
     }
-    onSuccess()
-    setPaying(false)
   }
 
   return (
@@ -349,7 +372,6 @@ export default function StudentDashboard() {
         <title>マイページ | 電話韓国語 チグム</title>
       </Head>
 
-      {/* トップバー */}
       <header className="bg-white border-b border-gray-100 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <button
@@ -374,7 +396,6 @@ export default function StudentDashboard() {
       </header>
 
       <div className="flex">
-        {/* サイドバー（モバイルはオーバーレイ） */}
         {sidebarOpen && (
           <div className="fixed inset-0 bg-black/30 z-20 md:hidden" onClick={() => setSidebarOpen(false)} />
         )}
@@ -404,7 +425,6 @@ export default function StudentDashboard() {
           </div>
         </aside>
 
-        {/* メインコンテンツ */}
         <main className="flex-1 p-4 md:p-8 min-w-0">
 
           {hasBooking === false && (
@@ -432,7 +452,6 @@ export default function StudentDashboard() {
                 <p className="text-sm text-gray-400 mt-0.5">おかえりなさい、部員さん</p>
               </div>
 
-              {/* ステータスカード */}
               {hasBooking && <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">次回練習</p>
@@ -462,14 +481,12 @@ export default function StudentDashboard() {
                 </div>
               </div>}
 
-              {/* カレンダー */}
               {hasBooking &&
               <div className="mb-6">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">練習カレンダー</h2>
                 <CalendarWidget />
               </div>}
 
-              {/* クイックアクション */}
               <div>
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">クイックアクション</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
