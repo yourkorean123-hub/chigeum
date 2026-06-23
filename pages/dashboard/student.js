@@ -139,7 +139,7 @@ function CheckoutForm({ amount, onSuccess }) {
 
 function StripeCheckout({ amount, onSuccess }) {
   return (
-    <Elements stripe={stripePromise}>
+    <Elements stripe={stripePromise} options={{ locale: 'ja' }}>
       <CheckoutForm amount={amount} onSuccess={onSuccess} />
     </Elements>
   )
