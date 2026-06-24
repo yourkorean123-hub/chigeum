@@ -5,12 +5,6 @@ import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import { supabase } from '../../lib/supabaseClient'
 
-const MOCK_MEMBERS = [
-  { id: 1, name: '田中 花子', course: '10分コース', time: '10:00', lastDate: '2026年6月2日' },
-  { id: 2, name: '佐藤 太郎', course: '10分コース', time: '13:00', lastDate: '2026年6月2日' },
-  { id: 3, name: '山田 あかり', course: '20分コース', time: '19:00', lastDate: '2026年6月2日' },
-]
-
 function StarSelector({ value, onChange }) {
   return (
     <div className="flex gap-1">
@@ -33,27 +27,105 @@ function StarSelector({ value, onChange }) {
 export default function ReviewInput() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [members, setMembers] = useState([])
   const [selectedMember, setSelectedMember] = useState(null)
   const [comment, setComment] = useState('')
   const [nextPoint, setNextPoint] = useState('')
   const [rating, setRating] = useState(5)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) { router.push('/login'); return }
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/login')
+        return
+      }
+
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('lesson_bookings')
+        .select('id, student_id, duration_min, created_at')
+        .eq('coach_id', session.user.id)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+
+      if (bookingsError) {
+        setError(bookingsError.message)
+        setLoading(false)
+        return
+      }
+
+      if (!bookings?.length) {
+        setMembers([])
+        setLoading(false)
+        return
+      }
+
+      const studentIds = [...new Set(bookings.map((booking) => booking.student_id).filter(Boolean))]
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', studentIds)
+
+      if (profileError) {
+        setError(profileError.message)
+        setLoading(false)
+        return
+      }
+
+      const profileMap = Object.fromEntries((profiles || []).map((profile) => [profile.id, profile.name]))
+      setMembers(
+        bookings.map((booking) => ({
+          id: booking.id,
+          bookingId: booking.id,
+          studentId: booking.student_id,
+          name: profileMap[booking.student_id] || '未登録',
+          durationMin: booking.duration_min || 10,
+        }))
+      )
       setLoading(false)
-    })
-  }, [])
+    }
+
+    init()
+  }, [router])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!selectedMember) return
+
     setSubmitting(true)
-    // 実際はSupabaseに保存する処理
-    await new Promise(r => setTimeout(r, 800))
-    setSubmitted(true)
-    setSubmitting(false)
+    setError('')
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/login')
+        return
+      }
+
+      const { error: insertError } = await supabase.from('reviews').insert({
+        booking_id: selectedMember.bookingId,
+        student_id: selectedMember.studentId,
+        coach_id: session.user.id,
+        rating,
+        comment,
+        next_point: nextPoint,
+        duration_min: selectedMember.durationMin || 10,
+      })
+
+      if (insertError) {
+        throw insertError
+      }
+
+      setSubmitted(true)
+    } catch (err) {
+      console.error('[review-input] submit failed:', err)
+      setError(err?.message || 'レビュー送信に失敗しました。')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleReset = () => {
@@ -62,6 +134,7 @@ export default function ReviewInput() {
     setNextPoint('')
     setRating(5)
     setSubmitted(false)
+    setError('')
   }
 
   if (loading) return (
@@ -85,8 +158,9 @@ export default function ReviewInput() {
             <p className="text-sm text-gray-500 mt-1">練習後のフィードバックを部員に送りましょう</p>
           </div>
 
+          {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+
           {submitted ? (
-            /* 送信完了 */
             <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-sm p-10 text-center">
               <div className="w-16 h-16 rounded-full bg-[#A32D2D]/10 flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-[#A32D2D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,29 +189,33 @@ export default function ReviewInput() {
               </button>
             </div>
           ) : !selectedMember ? (
-            /* 部員選択 */
             <div>
               <h2 className="text-base font-bold text-gray-700 mb-4">今日練習した部員を選んでください</h2>
-              <div className="space-y-3">
-                {MOCK_MEMBERS.map(member => (
-                  <button
-                    key={member.id}
-                    onClick={() => setSelectedMember(member)}
-                    className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 hover:border-[#0C447C]/30 hover:shadow-md transition"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-bold text-gray-800">{member.name}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{member.lastDate} ／ {member.time} ／ {member.course}</p>
+              {members.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-10 text-center text-sm text-gray-500">
+                  承認済みのレッスンがまだありません。
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {members.map((member) => (
+                    <button
+                      key={member.id}
+                      onClick={() => setSelectedMember(member)}
+                      className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 hover:border-[#0C447C]/30 hover:shadow-md transition"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-gray-800">{member.name}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">承認済みレッスン</p>
+                        </div>
+                        <span className="text-gray-300 text-xl">›</span>
                       </div>
-                      <span className="text-gray-300 text-xl">›</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
-            /* レビュー入力フォーム */
             <div>
               <button onClick={() => setSelectedMember(null)} className="text-sm text-gray-400 hover:text-gray-600 mb-4 flex items-center gap-1">
                 ← 部員選択に戻る
@@ -148,17 +226,15 @@ export default function ReviewInput() {
                   <p className="text-xs text-gray-400">レビュー対象</p>
                   <p className="font-bold text-[#0C447C]">{selectedMember.name}</p>
                 </div>
-                <p className="text-xs text-gray-500">{selectedMember.lastDate} ／ {selectedMember.time}</p>
+                <p className="text-xs text-gray-500">承認済みレッスン</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* 評価 */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-3">今日の練習の評価</label>
                   <StarSelector value={rating} onChange={setRating} />
                 </div>
 
-                {/* コメント */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     💬 コーチからのコメント <span className="text-[#A32D2D]">*</span>
@@ -168,13 +244,12 @@ export default function ReviewInput() {
                     required
                     rows={4}
                     value={comment}
-                    onChange={e => setComment(e.target.value)}
+                    onChange={(e) => setComment(e.target.value)}
                     placeholder="例：発音がとても上手になりました！特に「으」の音が自然に出せていました。"
                     className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40 resize-none"
                   />
                 </div>
 
-                {/* 次回のポイント */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     🎯 次回の練習ポイント <span className="text-[#A32D2D]">*</span>
@@ -184,7 +259,7 @@ export default function ReviewInput() {
                     required
                     rows={3}
                     value={nextPoint}
-                    onChange={e => setNextPoint(e.target.value)}
+                    onChange={(e) => setNextPoint(e.target.value)}
                     placeholder="例：「ㄹ」の発音をもう少し意識してみましょう。語尾の「요」をしっかり伸ばすと自然に聞こえます。"
                     className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C447C]/40 resize-none"
                   />

@@ -28,6 +28,8 @@ export default async function handler(req, res) {
     duration,
     contact,
     callMethod,
+    name,
+    furigana,
   } = req.body
 
   if (!userId || !course || !frequency || !duration) {
@@ -40,6 +42,8 @@ export default async function handler(req, res) {
     course,
     frequency,
     duration,
+    name,
+    furigana,
   }
 
   if (callMethod === 'line' && contact) {

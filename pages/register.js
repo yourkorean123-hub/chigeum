@@ -82,6 +82,8 @@ export default function Register() {
           duration,
           contact,
           callMethod,
+          name,
+          furigana,
         }),
       })
 
@@ -235,13 +237,13 @@ export default function Register() {
                   </select>
                 </div>
                 {price && (
-  <div className="rounded-2xl bg-[#FFF8E1] border border-[#FFE082] px-6 py-4 text-center">
-    <p className="text-sm text-gray-600 mb-1">月額料金</p>
-    <p className="text-2xl font-bold text-[#C8272D]">¥{price.toLocaleString()}<span className="text-base font-normal text-gray-600">/月</span></p>
-    {duration === '3months' && <p className="text-xs text-[#F57F17] mt-1">3ヶ月プラン適用中（5%割引）</p>}
-  </div>
-)}
-<div className="flex items-start gap-3">
+                  <div className="rounded-2xl bg-[#FFF8E1] border border-[#FFE082] px-6 py-4 text-center">
+                    <p className="text-sm text-gray-600 mb-1">月額料金</p>
+                    <p className="text-2xl font-bold text-[#C8272D]">¥{price.toLocaleString()}<span className="text-base font-normal text-gray-600">/月</span></p>
+                    {duration === '3months' && <p className="text-xs text-[#F57F17] mt-1">3ヶ月プラン適用中（5%割引）</p>}
+                  </div>
+                )}
+                <div className="flex items-start gap-3">
                   <input id="terms" name="terms" type="checkbox" required className="mt-1 h-4 w-4 accent-[#C8272D]" />
                   <label htmlFor="terms" className="text-sm text-gray-700">利用規約に同意します（必須）</label>
                 </div>
