@@ -408,7 +408,14 @@ export default function StudentDashboard() {
             {MENU.map((item) => (
               <button
                 key={item.id}
-                onClick={() => { setActiveMenu(item.id); setSidebarOpen(false) }}
+                onClick={() => {
+                  if (item.id === 'review') {
+                    router.push('/review')
+                    return
+                  }
+                  setActiveMenu(item.id)
+                  setSidebarOpen(false)
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition
                   ${activeMenu === item.id
                     ? 'bg-[#A32D2D]/10 text-[#A32D2D]'

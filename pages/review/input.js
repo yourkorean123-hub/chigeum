@@ -153,6 +153,13 @@ export default function ReviewInput() {
       <main className="min-h-[80vh] bg-gray-50 py-10">
         <div className="max-w-2xl mx-auto px-6">
           <div className="mb-8">
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard/coach')}
+              className="mb-4 text-sm text-gray-500 hover:text-[#0C447C] flex items-center gap-1"
+            >
+              ← コーチページに戻る
+            </button>
             <p className="text-sm uppercase tracking-[0.3em] text-[#A32D2D] mb-2">COACH REVIEW</p>
             <h1 className="text-2xl font-extrabold text-[#0C447C]">レビュー入力</h1>
             <p className="text-sm text-gray-500 mt-1">練習後のフィードバックを部員に送りましょう</p>
