@@ -257,7 +257,7 @@ function WeeklySchedule({ coachId }) {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] lg:items-start">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,8fr)] lg:items-start">
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-2.5 sm:p-3 lg:max-w-xs lg:justify-self-start">
         <div className="flex items-center justify-between mb-2">
           <button onClick={() => setViewMonth(new Date(year, month - 1, 1))} className="rounded-full p-1 text-[#0C447C] hover:bg-[#0C447C]/5 transition">◀</button>
@@ -301,7 +301,7 @@ function WeeklySchedule({ coachId }) {
           <p className="text-sm text-gray-400">読み込み中...</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-[860px] w-full text-sm border-separate border-spacing-0">
+            <table className="min-w-[600px] w-full text-sm border-separate border-spacing-0">
               <thead>
                 <tr>
                   <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2 text-left border-b border-gray-200">時間</th>
@@ -607,7 +607,7 @@ export default function CoachDashboard() {
                 <BookingsList coachId={coachId} />
               </>
             )}
-            {activeMenu !== 'today' && activeMenu !== 'approvals' && activeMenu !== 'availability' && activeMenu !== 'bookings' && (
+            {activeMenu !== 'today' && activeMenu !== 'week' && activeMenu !== 'approvals' && activeMenu !== 'availability' && activeMenu !== 'bookings' && (
               <>
                 <div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">{MENU.find(m => m.id === activeMenu)?.label}</h1></div>
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
