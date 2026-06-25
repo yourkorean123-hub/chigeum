@@ -257,19 +257,19 @@ function WeeklySchedule({ coachId }) {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 md:p-5">
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={() => setViewMonth(new Date(year, month - 1, 1))} className="rounded-full p-2 text-[#0C447C] hover:bg-[#0C447C]/5 transition">◀</button>
-          <h2 className="text-base font-bold text-[#0C447C]">{year}年{month + 1}月</h2>
-          <button onClick={() => setViewMonth(new Date(year, month + 1, 1))} className="rounded-full p-2 text-[#0C447C] hover:bg-[#0C447C]/5 transition">▶</button>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)]">
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-3 md:p-4 lg:p-5">
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={() => setViewMonth(new Date(year, month - 1, 1))} className="rounded-full p-1.5 text-[#0C447C] hover:bg-[#0C447C]/5 transition">◀</button>
+          <h2 className="text-sm font-bold text-[#0C447C]">{year}年{month + 1}月</h2>
+          <button onClick={() => setViewMonth(new Date(year, month + 1, 1))} className="rounded-full p-1.5 text-[#0C447C] hover:bg-[#0C447C]/5 transition">▶</button>
         </div>
-        <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-gray-400 mb-2">
+        <div className="grid grid-cols-7 text-center text-[10px] font-semibold text-gray-400 mb-2">
           {DAYS.map((day) => <div key={day}>{day}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-1">
           {cells.map((date, index) => {
-            if (!date) return <div key={`empty-${index}`} className="h-10" />
+            if (!date) return <div key={`empty-${index}`} className="h-8 sm:h-9" />
             const isToday = sameDate(date, today)
             const isSelected = sameDate(date, selectedDate)
             return (
@@ -279,7 +279,7 @@ function WeeklySchedule({ coachId }) {
                   setSelectedDate(date)
                   setViewMonth(new Date(date.getFullYear(), date.getMonth(), 1))
                 }}
-                className={`h-10 rounded-xl text-sm font-medium transition ${isSelected ? 'bg-[#0C447C] text-white shadow-sm' : 'text-gray-700 hover:bg-[#0C447C]/5'} ${isToday && !isSelected ? 'underline decoration-[#A32D2D] decoration-2 underline-offset-4' : ''}`}
+                className={`h-8 sm:h-9 rounded-lg text-xs sm:text-sm font-medium transition ${isSelected ? 'bg-[#0C447C] text-white shadow-sm' : 'text-gray-700 hover:bg-[#0C447C]/5'} ${isToday && !isSelected ? 'underline decoration-[#A32D2D] decoration-2 underline-offset-4' : ''}`}
               >
                 {date.getDate()}
               </button>
@@ -288,7 +288,7 @@ function WeeklySchedule({ coachId }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 md:p-5">
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-3 md:p-4 lg:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
           <div>
             <h2 className="text-lg font-bold text-[#0C447C]">{selectedDate.getFullYear()}年 {selectedDate.getMonth() + 1}月{selectedDate.getDate()}日</h2>
@@ -573,7 +573,7 @@ export default function CoachDashboard() {
               <><div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">本日のスケジュール</h1><p className="text-sm text-gray-400 mt-0.5">本日の練習一覧です</p></div><TodaySchedule schedule={schedule} onReview={setReviewTarget} /></>
             )}
             {activeMenu === 'week' && (
-              <><div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">週間スケジュール</h1><p className="text-sm text-gray-400 mt-0.5">選択した曜日の講義を確認できます</p></div><WeeklySchedule coachId={coachId} /></>
+              <><div className="mb-6"><p className="text-sm text-gray-400 mt-0.5">選択した曜日の講義を確認できます</p></div><WeeklySchedule coachId={coachId} /></>
             )}
             {activeMenu === 'availability' && (
               <><div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">受講可能時間の設定</h1><p className="text-sm text-gray-400 mt-0.5">赤いマスをクリックしてオープン時間を設定します</p></div><AvailabilitySettings coachId={coachId} /></>
