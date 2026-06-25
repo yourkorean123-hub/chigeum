@@ -167,6 +167,189 @@ function TodaySchedule({ schedule, onReview }) {
   )
 }
 
+function WeeklySchedule({ coachId }) {
+  const today = new Date()
+  const [viewMonth, setViewMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1))
+  const [selectedDate, setSelectedDate] = useState(() => new Date(today))
+  const [bookings, setBookings] = useState([])
+  const [profiles, setProfiles] = useState({})
+  const [reviewMap, setReviewMap] = useState({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!coachId) return
+
+    const loadBookings = async () => {
+      setLoading(true)
+      const { data: bookingRows, error } = await supabase
+        .from('lesson_bookings')
+        .select('id, student_id, coach_id, day_of_week, hour, minute, duration_min, method, contact, status')
+        .eq('coach_id', coachId)
+        .eq('status', 'approved')
+        .order('day_of_week', { ascending: true })
+        .order('hour', { ascending: true })
+        .order('minute', { ascending: true })
+
+      if (error) {
+        console.error('[coach-weekly] fetch bookings failed:', error)
+        setBookings([])
+        setProfiles({})
+        setReviewMap({})
+        setLoading(false)
+        return
+      }
+
+      const studentIds = [...new Set((bookingRows || []).map((booking) => booking.student_id).filter(Boolean))]
+      let profileMap = {}
+      if (studentIds.length > 0) {
+        const { data: profileRows } = await supabase
+          .from('profiles')
+          .select('id, name, line_id')
+          .in('id', studentIds)
+        profileMap = Object.fromEntries((profileRows || []).map((profile) => [profile.id, { name: profile.name || '未登録', line_id: profile.line_id || '' }]))
+      }
+
+      let reviewState = {}
+      if (bookingRows?.length) {
+        const { data: reviewRows } = await supabase
+          .from('reviews')
+          .select('id, booking_id, student_id, coach_id')
+          .eq('coach_id', coachId)
+        reviewState = Object.fromEntries((reviewRows || []).map((review) => [review.booking_id ? `booking:${review.booking_id}` : `pair:${review.student_id}:${review.coach_id}`, true]))
+      }
+
+      setBookings(bookingRows || [])
+      setProfiles(profileMap)
+      setReviewMap(reviewState)
+      setLoading(false)
+    }
+
+    loadBookings()
+  }, [coachId])
+
+  const sameDate = (a, b) => a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+
+  const year = viewMonth.getFullYear()
+  const month = viewMonth.getMonth()
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const cells = []
+  for (let i = 0; i < firstDay; i += 1) cells.push(null)
+  for (let i = 1; i <= daysInMonth; i += 1) cells.push(new Date(year, month, i))
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const selectedBookings = bookings
+    .filter((booking) => booking.day_of_week === selectedDate.getDay())
+    .sort((a, b) => (a.hour * 60 + a.minute) - (b.hour * 60 + b.minute))
+
+  const formatTime = (hour, minute, durationMin) => {
+    const start = new Date(2000, 0, 1, hour, minute)
+    const end = new Date(start.getTime() + durationMin * 60000)
+    return `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}-${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`
+  }
+
+  const formatContact = (booking) => {
+    const method = booking.method || ''
+    const contact = booking.contact || ''
+    if (!method && !contact) return ''
+    if (!contact) return method
+    return `${method}(${contact})`
+  }
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 md:p-5">
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => setViewMonth(new Date(year, month - 1, 1))} className="rounded-full p-2 text-[#0C447C] hover:bg-[#0C447C]/5 transition">◀</button>
+          <h2 className="text-base font-bold text-[#0C447C]">{year}年{month + 1}月</h2>
+          <button onClick={() => setViewMonth(new Date(year, month + 1, 1))} className="rounded-full p-2 text-[#0C447C] hover:bg-[#0C447C]/5 transition">▶</button>
+        </div>
+        <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-gray-400 mb-2">
+          {DAYS.map((day) => <div key={day}>{day}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((date, index) => {
+            if (!date) return <div key={`empty-${index}`} className="h-10" />
+            const isToday = sameDate(date, today)
+            const isSelected = sameDate(date, selectedDate)
+            return (
+              <button
+                key={date.toISOString()}
+                onClick={() => {
+                  setSelectedDate(date)
+                  setViewMonth(new Date(date.getFullYear(), date.getMonth(), 1))
+                }}
+                className={`h-10 rounded-xl text-sm font-medium transition ${isSelected ? 'bg-[#0C447C] text-white shadow-sm' : 'text-gray-700 hover:bg-[#0C447C]/5'} ${isToday && !isSelected ? 'underline decoration-[#A32D2D] decoration-2 underline-offset-4' : ''}`}
+              >
+                {date.getDate()}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 md:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-[#0C447C]">{selectedDate.getFullYear()}年 {selectedDate.getMonth() + 1}月{selectedDate.getDate()}日</h2>
+            <p className="text-sm text-gray-400">{DAYS[selectedDate.getDay()]}曜日</p>
+          </div>
+          <div className="text-sm font-semibold text-[#A32D2D]">{selectedBookings.length}講義</div>
+        </div>
+
+        {loading ? (
+          <p className="text-sm text-gray-400">読み込み中...</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-[860px] w-full text-sm border-separate border-spacing-0">
+              <thead>
+                <tr>
+                  <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2 text-left border-b border-gray-200">時間</th>
+                  <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2 text-left border-b border-gray-200">名前</th>
+                  <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2 text-left border-b border-gray-200">ID</th>
+                  <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2 text-left border-b border-gray-200">レビュー</th>
+                  <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2 text-left border-b border-gray-200">教材</th>
+                  <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2 text-left border-b border-gray-200">授業方式(連絡先)</th>
+                  <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2 text-left border-b border-gray-200">補講</th>
+                  <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2 text-left border-b border-gray-200">備考</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-3 py-8 text-center text-sm text-gray-400">この日の講義はありません</td>
+                  </tr>
+                ) : selectedBookings.map((booking) => {
+                  const profile = profiles[booking.student_id] || { name: '未登録', line_id: '' }
+                  const hasReview = Boolean(reviewMap[`booking:${booking.id}`] || reviewMap[`pair:${booking.student_id}:${booking.coach_id}`])
+                  return (
+                    <tr key={booking.id} className="odd:bg-white even:bg-[#F6FAFF] hover:bg-[#F0F7FF] transition">
+                      <td className="px-3 py-3 text-gray-700 whitespace-nowrap border-b border-gray-100">{formatTime(booking.hour, booking.minute, booking.duration_min)}</td>
+                      <td className="px-3 py-3 text-gray-700 border-b border-gray-100">{profile.name}</td>
+                      <td className="px-3 py-3 text-gray-700 border-b border-gray-100">{profile.line_id}</td>
+                      <td className="px-3 py-3 border-b border-gray-100">
+                        {hasReview ? (
+                          <Link href="/review" className="text-[#0C447C] font-semibold hover:underline">見る</Link>
+                        ) : (
+                          <Link href="/review/input" className="text-[#A32D2D] font-semibold hover:underline">✏️</Link>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-gray-400 border-b border-gray-100"></td>
+                      <td className="px-3 py-3 text-gray-700 border-b border-gray-100">{formatContact(booking)}</td>
+                      <td className="px-3 py-3 text-gray-400 border-b border-gray-100"></td>
+                      <td className="px-3 py-3 text-gray-400 border-b border-gray-100"></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function AvailabilitySettings({ coachId }) {
   const [grid, setGrid] = useState(initGrid)
   const [loading, setLoading] = useState(true)
@@ -385,9 +568,12 @@ export default function CoachDashboard() {
           <div className="p-4 border-t border-gray-100"><p className="text-[10px] text-gray-400 text-center">電話韓国語 チグム</p></div>
         </aside>
         <main className="flex-1 p-4 md:p-8 min-w-0">
-          <div className="max-w-3xl">
+          <div className="max-w-7xl">
             {activeMenu === 'today' && (
               <><div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">本日のスケジュール</h1><p className="text-sm text-gray-400 mt-0.5">本日の練習一覧です</p></div><TodaySchedule schedule={schedule} onReview={setReviewTarget} /></>
+            )}
+            {activeMenu === 'week' && (
+              <><div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">週間スケジュール</h1><p className="text-sm text-gray-400 mt-0.5">選択した曜日の講義を確認できます</p></div><WeeklySchedule coachId={coachId} /></>
             )}
             {activeMenu === 'availability' && (
               <><div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">受講可能時間の設定</h1><p className="text-sm text-gray-400 mt-0.5">赤いマスをクリックしてオープン時間を設定します</p></div><AvailabilitySettings coachId={coachId} /></>
