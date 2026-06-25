@@ -5,6 +5,20 @@ import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import { supabase } from '../../lib/supabaseClient'
 
+function getQueryValue(value) {
+  return Array.isArray(value) ? value[0] : value || ''
+}
+
+function formatDateValue(value) {
+  if (!value) return ''
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    return `${year}年${month}月${day}日`
+  }
+  const date = new Date(value)
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
+}
+
 function StarSelector({ value, onChange }) {
   return (
     <div className="flex gap-1">
@@ -44,6 +58,10 @@ export default function ReviewInput() {
         return
       }
 
+      const studentParam = getQueryValue(router.query.student)
+      const dateParam = getQueryValue(router.query.date)
+      const bookingParam = getQueryValue(router.query.booking)
+
       const { data: bookings, error: bookingsError } = await supabase
         .from('lesson_bookings')
         .select('id, student_id, duration_min, created_at')
@@ -57,13 +75,7 @@ export default function ReviewInput() {
         return
       }
 
-      if (!bookings?.length) {
-        setMembers([])
-        setLoading(false)
-        return
-      }
-
-      const studentIds = [...new Set(bookings.map((booking) => booking.student_id).filter(Boolean))]
+      const studentIds = [...new Set(bookings?.map((booking) => booking.student_id).filter(Boolean) || [])]
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
         .select('id, name')
@@ -75,21 +87,41 @@ export default function ReviewInput() {
         return
       }
 
-      const profileMap = Object.fromEntries((profiles || []).map((profile) => [profile.id, profile.name]))
-      setMembers(
-        bookings.map((booking) => ({
-          id: booking.id,
-          bookingId: booking.id,
-          studentId: booking.student_id,
-          name: profileMap[booking.student_id] || '未登録',
-          durationMin: booking.duration_min || 10,
-        }))
-      )
+      const profileMap = Object.fromEntries((profiles || []).map((profile) => [profile.id, profile.name || '未登録']))
+      const memberList = (bookings || []).map((booking) => ({
+        id: booking.id,
+        bookingId: booking.id,
+        studentId: booking.student_id,
+        name: profileMap[booking.student_id] || '未登録',
+        durationMin: booking.duration_min || 10,
+      }))
+
+      setMembers(memberList)
+
+      if (studentParam) {
+        const targetBooking = memberList.find((member) => member.studentId === studentParam && (!bookingParam || member.bookingId === Number(bookingParam)))
+          || memberList.find((member) => member.studentId === studentParam)
+        if (targetBooking) {
+          setSelectedMember({
+            ...targetBooking,
+            bookingId: bookingParam ? Number(bookingParam) : targetBooking.bookingId,
+          })
+        } else {
+          setSelectedMember({
+            id: `${studentParam}-direct`,
+            bookingId: bookingParam ? Number(bookingParam) : null,
+            studentId: studentParam,
+            name: profileMap[studentParam] || '未登録',
+            durationMin: 10,
+          })
+        }
+      }
+
       setLoading(false)
     }
 
     init()
-  }, [router])
+  }, [router.query.student, router.query.date, router.query.booking, router])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -105,15 +137,23 @@ export default function ReviewInput() {
         return
       }
 
-      const { error: insertError } = await supabase.from('reviews').insert({
-        booking_id: selectedMember.bookingId,
+      const reviewPayload = {
         student_id: selectedMember.studentId,
         coach_id: session.user.id,
         rating,
         comment,
         next_point: nextPoint,
         duration_min: selectedMember.durationMin || 10,
-      })
+      }
+
+      if (getQueryValue(router.query.date)) {
+        reviewPayload.lesson_date = getQueryValue(router.query.date)
+      }
+      if (selectedMember.bookingId) {
+        reviewPayload.booking_id = selectedMember.bookingId
+      }
+
+      const { error: insertError } = await supabase.from('reviews').insert(reviewPayload)
 
       if (insertError) {
         throw insertError
@@ -233,7 +273,12 @@ export default function ReviewInput() {
                   <p className="text-xs text-gray-400">レビュー対象</p>
                   <p className="font-bold text-[#0C447C]">{selectedMember.name}</p>
                 </div>
-                <p className="text-xs text-gray-500">承認済みレッスン</p>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">承認済みレッスン</p>
+                  {getQueryValue(router.query.date) && (
+                    <p className="text-xs text-[#A32D2D] font-semibold">{formatDateValue(getQueryValue(router.query.date))}</p>
+                  )}
+                </div>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">

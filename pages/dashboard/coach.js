@@ -213,9 +213,13 @@ function WeeklySchedule({ coachId }) {
       if (bookingRows?.length) {
         const { data: reviewRows } = await supabase
           .from('reviews')
-          .select('id, booking_id, student_id, coach_id')
+          .select('id, booking_id, student_id, coach_id, lesson_date')
           .eq('coach_id', coachId)
-        reviewState = Object.fromEntries((reviewRows || []).map((review) => [review.booking_id ? `booking:${review.booking_id}` : `pair:${review.student_id}:${review.coach_id}`, true]))
+        reviewState = Object.fromEntries(
+          (reviewRows || [])
+            .filter((review) => review.student_id && review.lesson_date)
+            .map((review) => [`${review.student_id}:${review.lesson_date}`, true])
+        )
       }
 
       setBookings(bookingRows || [])
@@ -255,6 +259,14 @@ function WeeklySchedule({ coachId }) {
     if (!contact) return method
     return `${method}(${contact})`
   }
+
+  const formatDateKey = (date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+  const selectedDateKey = formatDateKey(selectedDate)
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,8fr)] lg:items-start">
@@ -321,7 +333,10 @@ function WeeklySchedule({ coachId }) {
                   </tr>
                 ) : selectedBookings.map((booking) => {
                   const profile = profiles[booking.student_id] || { name: '未登録', line_id: '' }
-                  const hasReview = Boolean(reviewMap[`booking:${booking.id}`] || reviewMap[`pair:${booking.student_id}:${booking.coach_id}`])
+                  const hasReview = Boolean(reviewMap[`${booking.student_id}:${selectedDateKey}`])
+                  const reviewHref = hasReview
+                    ? `/review/coach-view?student=${booking.student_id}&date=${selectedDateKey}`
+                    : `/review/input?student=${booking.student_id}&date=${selectedDateKey}&booking=${booking.id}`
                   return (
                     <tr key={booking.id} className="odd:bg-white even:bg-[#F6FAFF] hover:bg-[#F0F7FF] transition">
                       <td className="px-3 py-3 text-gray-700 whitespace-nowrap border-b border-gray-100">{formatTime(booking.hour, booking.minute, booking.duration_min)}</td>
@@ -329,9 +344,9 @@ function WeeklySchedule({ coachId }) {
                       <td className="px-3 py-3 text-gray-700 border-b border-gray-100">{profile.line_id}</td>
                       <td className="px-3 py-3 border-b border-gray-100">
                         {hasReview ? (
-                          <Link href="/review/coach-view" className="text-[#0C447C] font-semibold hover:underline">見る</Link>
+                          <Link href={reviewHref} className="text-[#0C447C] font-semibold hover:underline">見る</Link>
                         ) : (
-                          <Link href="/review/input" className="text-[#A32D2D] font-semibold hover:underline">✏️</Link>
+                          <Link href={reviewHref} className="text-[#A32D2D] font-semibold hover:underline">✏️</Link>
                         )}
                       </td>
                       <td className="px-3 py-3 text-gray-400 border-b border-gray-100"></td>

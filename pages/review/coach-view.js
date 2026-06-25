@@ -17,8 +17,16 @@ function StarRating({ rating }) {
   )
 }
 
+function getQueryValue(value) {
+  return Array.isArray(value) ? value[0] : value || ''
+}
+
 function formatDate(value) {
   if (!value) return ''
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    return `${year}年${month}月${day}日`
+  }
   const date = new Date(value)
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
 }
@@ -37,11 +45,13 @@ export default function CoachReviewView() {
         return
       }
 
+      const studentParam = getQueryValue(router.query.student)
+      const dateParam = getQueryValue(router.query.date)
+
       const { data, error: reviewsError } = await supabase
         .from('reviews')
-        .select('id, rating, comment, next_point, created_at, student_id, coach_id')
+        .select('id, rating, comment, next_point, lesson_date, created_at, student_id, coach_id')
         .eq('coach_id', session.user.id)
-        .order('created_at', { ascending: false })
 
       if (reviewsError) {
         setError(reviewsError.message)
@@ -49,13 +59,22 @@ export default function CoachReviewView() {
         return
       }
 
-      if (!data?.length) {
+      const filteredReviews = (data || []).filter((review) => {
+        if (studentParam && review.student_id !== studentParam) return false
+        if (dateParam) {
+          const reviewDate = review.lesson_date || review.created_at
+          return reviewDate === dateParam
+        }
+        return true
+      })
+
+      if (!filteredReviews.length) {
         setReviews([])
         setLoading(false)
         return
       }
 
-      const studentIds = [...new Set(data.map((review) => review.student_id).filter(Boolean))]
+      const studentIds = [...new Set(filteredReviews.map((review) => review.student_id).filter(Boolean))]
       let studentNameMap = {}
 
       if (studentIds.length > 0) {
@@ -70,17 +89,24 @@ export default function CoachReviewView() {
       }
 
       setReviews(
-        (data || []).map((review) => ({
-          ...review,
-          studentName: studentNameMap[review.student_id] || '未登録',
-          dateLabel: formatDate(review.created_at),
-        }))
+        filteredReviews
+          .slice()
+          .sort((a, b) => {
+            const aDate = a.lesson_date || a.created_at || ''
+            const bDate = b.lesson_date || b.created_at || ''
+            return bDate > aDate ? 1 : bDate < aDate ? -1 : 0
+          })
+          .map((review) => ({
+            ...review,
+            studentName: studentNameMap[review.student_id] || '未登録',
+            dateLabel: formatDate(review.lesson_date || review.created_at),
+          }))
       )
       setLoading(false)
     }
 
     loadReviews()
-  }, [router])
+  }, [router.query.student, router.query.date, router])
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
