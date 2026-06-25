@@ -329,7 +329,7 @@ function WeeklySchedule({ coachId }) {
                       <td className="px-3 py-3 text-gray-700 border-b border-gray-100">{profile.line_id}</td>
                       <td className="px-3 py-3 border-b border-gray-100">
                         {hasReview ? (
-                          <Link href="/review" className="text-[#0C447C] font-semibold hover:underline">見る</Link>
+                          <Link href="/review/coach-view" className="text-[#0C447C] font-semibold hover:underline">見る</Link>
                         ) : (
                           <Link href="/review/input" className="text-[#A32D2D] font-semibold hover:underline">✏️</Link>
                         )}
