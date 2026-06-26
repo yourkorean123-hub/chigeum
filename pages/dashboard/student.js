@@ -413,6 +413,10 @@ export default function StudentDashboard() {
                     router.push('/review')
                     return
                   }
+                  if (item.id === 'materials') {
+                    router.push('/materials')
+                    return
+                  }
                   setActiveMenu(item.id)
                   setSidebarOpen(false)
                 }}
@@ -504,7 +508,13 @@ export default function StudentDashboard() {
                   ].map((a) => (
                     <button
                       key={a.menu}
-                      onClick={() => setActiveMenu(a.menu)}
+                      onClick={() => {
+                        if (a.menu === 'materials') {
+                          router.push('/materials')
+                          return
+                        }
+                        setActiveMenu(a.menu)
+                      }}
                       className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center gap-2 hover:border-[#A32D2D]/30 hover:shadow-md transition text-center"
                     >
                       <span className="text-2xl">{a.icon}</span>
