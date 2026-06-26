@@ -66,6 +66,8 @@ export default function AdminDashboard() {
   const [coaches, setCoaches] = useState([])
   const [coachesLoading, setCoachesLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(null)
+  const [members, setMembers] = useState([])
+  const [membersLoading, setMembersLoading] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -88,7 +90,47 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (activeMenu === 'coaches') fetchCoaches()
+    if (activeMenu === 'members') fetchMembers()
   }, [activeMenu])
+
+  const fetchMembers = async () => {
+    setMembersLoading(true)
+    const { data: profileRows } = await supabase
+      .from('profiles')
+      .select('id, name, furigana, course, frequency, duration, call_method, line_id, coach_id, created_at')
+      .eq('role', 'student')
+      .order('created_at', { ascending: false })
+
+    const rows = profileRows || []
+    const coachIds = [...new Set(rows.map((r) => r.coach_id).filter(Boolean))]
+    let coachMap = {}
+    if (coachIds.length > 0) {
+      const { data: coachRows } = await supabase
+        .from('coaches')
+        .select('id, name')
+        .in('id', coachIds)
+      coachMap = Object.fromEntries((coachRows || []).map((c) => [c.id, c.name]))
+    }
+
+    const COURSE_LABEL = { '10min': '10分コース', '20min': '20分コース' }
+    const FREQ_LABEL = { weekly1: '週1', weekly2: '週2', weekly3: '週3', daily: '毎日' }
+    const DURATION_LABEL = { '1month': '1ヶ月', '3months': '3ヶ月' }
+
+    const formatted = rows.map((r) => ({
+      id: r.id,
+      name: r.name || '未登録',
+      furigana: r.furigana || '',
+      course: COURSE_LABEL[r.course] || r.course || '',
+      frequency: FREQ_LABEL[r.frequency] || r.frequency || '',
+      duration: DURATION_LABEL[r.duration] || r.duration || '',
+      method: r.call_method === 'phone' ? '電話' : r.call_method === 'line' ? 'LINE' : '',
+      contact: r.line_id || '',
+      coachName: r.coach_id ? (coachMap[r.coach_id] || '不明') : '未割当',
+      createdAt: r.created_at ? new Date(r.created_at).toLocaleDateString('ja-JP') : '',
+    }))
+    setMembers(formatted)
+    setMembersLoading(false)
+  }
 
   const fetchCoaches = async () => {
     setCoachesLoading(true)
@@ -295,7 +337,59 @@ export default function AdminDashboard() {
               </>
             )}
 
-            {activeMenu !== 'dashboard' && activeMenu !== 'coaches' && (
+            {activeMenu === 'members' && (
+              <>
+                <div className="mb-6 flex items-center justify-between">
+                  <h1 className="text-xl font-bold text-[#0C447C]">部員（生徒）管理</h1>
+                  <span className="text-sm font-semibold text-[#A32D2D]">{members.length}名</span>
+                </div>
+                {membersLoading ? (
+                  <p className="text-sm text-gray-400">読み込み中...</p>
+                ) : members.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+                    <p className="text-4xl mb-4">👥</p>
+                    <p className="text-gray-400 text-sm">登録されている部員はいません</p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-[800px] w-full text-sm border-separate border-spacing-0">
+                        <thead>
+                          <tr>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">名前</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">フリガナ</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">コース</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">頻度</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">期間</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">受講方法</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">連絡先</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">担当コーチ</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">登録日</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {members.map((m) => (
+                            <tr key={m.id} className="odd:bg-white even:bg-[#F6FAFF] hover:bg-[#F0F7FF] transition">
+                              <td className="px-3 py-3 text-gray-800 font-medium border-b border-gray-100 whitespace-nowrap">{m.name}</td>
+                              <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.furigana}</td>
+                              <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.course}</td>
+                              <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.frequency}</td>
+                              <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.duration}</td>
+                              <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.method}</td>
+                              <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.contact}</td>
+                              <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.coachName}</td>
+                              <td className="px-3 py-3 text-gray-400 border-b border-gray-100 whitespace-nowrap">{m.createdAt}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeMenu !== 'dashboard' && activeMenu !== 'coaches' && activeMenu !== 'members' && (
               <>
                 <div className="mb-6">
                   <h1 className="text-xl font-bold text-[#0C447C]">
