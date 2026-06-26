@@ -44,9 +44,10 @@ export default async function handler(req, res) {
     duration,
     name,
     furigana,
+    call_method: callMethod,
   }
 
-  if (callMethod === 'line' && contact) {
+  if (contact) {
     profilePayload.line_id = contact
   }
 

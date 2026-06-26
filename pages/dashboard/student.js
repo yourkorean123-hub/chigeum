@@ -15,6 +15,136 @@ const MENU = [
   { id: 'billing',  label: '部活費・お支払い', icon: '💳' },
 ]
 
+function StudentSettings({ studentId }) {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [name, setName] = useState('')
+  const [furigana, setFurigana] = useState('')
+  const [contact, setContact] = useState('')
+  const [callMethod, setCallMethod] = useState('line')
+
+  useEffect(() => {
+    if (!studentId) return
+    supabase
+      .from('profiles')
+      .select('name, furigana, line_id, call_method')
+      .eq('id', studentId)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setName(data.name || '')
+          setFurigana(data.furigana || '')
+          setContact(data.line_id || '')
+          setCallMethod(data.call_method || 'line')
+        }
+        setLoading(false)
+      })
+  }, [studentId])
+
+  const handleSave = async () => {
+    setSaving(true)
+    setSaved(false)
+    setErrorMsg('')
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        name,
+        furigana,
+        line_id: contact,
+        call_method: callMethod,
+      })
+      .eq('id', studentId)
+    if (error) {
+      console.error('[student-settings] update failed:', error)
+      setErrorMsg('保存に失敗しました。もう一度お試しください。')
+      setSaving(false)
+      return
+    }
+    setSaved(true)
+    setSaving(false)
+  }
+
+  if (loading) {
+    return <p className="text-sm text-gray-400">読み込み中...</p>
+  }
+
+  return (
+    <div className="max-w-xl">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">お名前</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setSaved(false) }}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">フリガナ</label>
+          <input
+            type="text"
+            value={furigana}
+            onChange={(e) => { setFurigana(e.target.value); setSaved(false) }}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">受講方法</label>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => { setCallMethod('line'); setSaved(false) }}
+              className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition ${callMethod === 'line' ? 'border-[#A32D2D] bg-[#A32D2D]/5 text-[#A32D2D]' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+            >
+              LINE通話
+            </button>
+            <button
+              type="button"
+              onClick={() => { setCallMethod('phone'); setSaved(false) }}
+              className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition ${callMethod === 'phone' ? 'border-[#A32D2D] bg-[#A32D2D]/5 text-[#A32D2D]' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+            >
+              電話
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            連絡先（{callMethod === 'phone' ? '電話番号' : 'LINE ID'}）
+          </label>
+          <input
+            type="text"
+            value={contact}
+            onChange={(e) => { setContact(e.target.value); setSaved(false) }}
+            placeholder={callMethod === 'phone' ? '例：090-1234-5678' : '例：your_line_id'}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40"
+          />
+        </div>
+
+        {errorMsg && <p className="text-sm text-red-500">{errorMsg}</p>}
+        {saved && <p className="text-sm text-green-600">変更を保存しました。</p>}
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full rounded-xl bg-[#A32D2D] text-white font-bold py-3 hover:bg-[#8a2525] transition disabled:opacity-50"
+        >
+          {saving ? '保存中...' : '変更を保存する'}
+        </button>
+
+        <p className="text-xs text-gray-400 leading-relaxed">
+          ※ 担当コーチ・レッスンの曜日や時間の変更をご希望の場合は、コーチまたは運営までご連絡ください。
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function CalendarWidget() {
   const today = new Date()
   const year = today.getFullYear()
@@ -538,7 +668,15 @@ export default function StudentDashboard() {
             </div>
           )}
 
-          {activeMenu !== 'home' && activeMenu !== 'booking' && (
+          {activeMenu === 'settings' && (
+            <div className="max-w-3xl">
+              <h1 className="text-xl font-bold text-[#0C447C] mb-1">各種変更</h1>
+              <p className="text-sm text-gray-400 mb-6">登録情報を変更できます</p>
+              <StudentSettings studentId={user?.id} />
+            </div>
+          )}
+
+          {activeMenu !== 'home' && activeMenu !== 'booking' && activeMenu !== 'settings' && (
             <div className="max-w-3xl">
               <h1 className="text-xl font-bold text-[#0C447C] mb-6">
                 {MENU.find(m => m.id === activeMenu)?.label}
