@@ -68,6 +68,8 @@ export default function AdminDashboard() {
   const [actionLoading, setActionLoading] = useState(null)
   const [members, setMembers] = useState([])
   const [membersLoading, setMembersLoading] = useState(false)
+  const [inquiries, setInquiries] = useState([])
+  const [inquiriesLoading, setInquiriesLoading] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -91,7 +93,33 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeMenu === 'coaches') fetchCoaches()
     if (activeMenu === 'members') fetchMembers()
+    if (activeMenu === 'inquiries') fetchInquiries()
   }, [activeMenu])
+
+  const fetchInquiries = async () => {
+    setInquiriesLoading(true)
+    const { data } = await supabase
+      .from('inquiries')
+      .select('id, name, email, message, status, created_at')
+      .order('created_at', { ascending: false })
+    const formatted = (data || []).map((r) => ({
+      id: r.id,
+      name: r.name || '',
+      email: r.email || '',
+      message: r.message || '',
+      status: r.status || 'new',
+      createdAt: r.created_at
+        ? new Date(r.created_at).toLocaleString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : '',
+    }))
+    setInquiries(formatted)
+    setInquiriesLoading(false)
+  }
+
+  const markInquiryDone = async (id) => {
+    await supabase.from('inquiries').update({ status: 'done' }).eq('id', id)
+    setInquiries((prev) => prev.map((q) => q.id === id ? { ...q, status: 'done' } : q))
+  }
 
   const fetchMembers = async () => {
     setMembersLoading(true)
@@ -389,7 +417,67 @@ export default function AdminDashboard() {
               </>
             )}
 
-            {activeMenu !== 'dashboard' && activeMenu !== 'coaches' && activeMenu !== 'members' && (
+            {activeMenu === 'inquiries' && (
+              <>
+                <div className="mb-6 flex items-center justify-between">
+                  <h1 className="text-xl font-bold text-[#0C447C]">お問い合わせ管理</h1>
+                  <span className="text-sm font-semibold text-[#A32D2D]">
+                    未対応 {inquiries.filter((q) => q.status !== 'done').length}件
+                  </span>
+                </div>
+                {inquiriesLoading ? (
+                  <p className="text-sm text-gray-400">読み込み中...</p>
+                ) : inquiries.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+                    <p className="text-4xl mb-4">📨</p>
+                    <p className="text-gray-400 text-sm">お問い合わせはまだありません</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {inquiries.map((q) => (
+                      <div
+                        key={q.id}
+                        className={`bg-white rounded-2xl border shadow-sm p-5 ${q.status === 'done' ? 'border-gray-100 opacity-60' : 'border-[#A32D2D]/20'}`}
+                      >
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <div>
+                            <p className="font-bold text-gray-800">{q.name}</p>
+                            <a href={`mailto:${q.email}`} className="text-sm text-[#0C447C] hover:underline">{q.email}</a>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className="text-xs text-gray-400 whitespace-nowrap">{q.createdAt}</span>
+                            {q.status === 'done' ? (
+                              <span className="text-xs font-semibold text-green-600">対応済み</span>
+                            ) : (
+                              <span className="text-xs font-semibold text-[#A32D2D]">未対応</span>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-gray-100 pt-3">{q.message}</p>
+                        <div className="flex gap-2 mt-4">
+                          <a
+                            href={`mailto:${q.email}`}
+                            className="text-sm font-semibold text-white bg-[#0C447C] rounded-lg px-4 py-2 hover:opacity-90 transition"
+                          >
+                            返信する
+                          </a>
+                          {q.status !== 'done' && (
+                            <button
+                              onClick={() => markInquiryDone(q.id)}
+                              className="text-sm font-semibold text-gray-600 bg-gray-100 rounded-lg px-4 py-2 hover:bg-gray-200 transition"
+                            >
+                              対応済みにする
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeMenu !== 'dashboard' && activeMenu !== 'coaches' && activeMenu !== 'members' && activeMenu !== 'inquiries' && (
               <>
                 <div className="mb-6">
                   <h1 className="text-xl font-bold text-[#0C447C]">

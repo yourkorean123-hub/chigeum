@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Header from '../components/Header'
@@ -5,10 +6,36 @@ import Footer from '../components/Footer'
 
 export default function Contact() {
   const router = useRouter()
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    router.push('/contact/complete')
+    setSubmitting(true)
+    setErrorMsg('')
+
+    const form = e.target
+    const payload = {
+      name: form.name.value,
+      email: form.email.value,
+      message: form.message.value,
+    }
+
+    try {
+      const response = await fetch('/api/submit-inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!response.ok) {
+        throw new Error('送信に失敗しました')
+      }
+      router.push('/contact/complete')
+    } catch (err) {
+      console.error('[contact] submit failed:', err)
+      setErrorMsg('送信に失敗しました。時間をおいて再度お試しください。')
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -71,11 +98,16 @@ export default function Contact() {
                   />
                 </div>
 
+                {errorMsg && (
+                  <p className="text-sm text-red-500">{errorMsg}</p>
+                )}
+
                 <button
                   type="submit"
-                  className="w-full rounded-2xl bg-[#C8272D] px-6 py-4 text-white text-lg font-semibold transition hover:opacity-90"
+                  disabled={submitting}
+                  className="w-full rounded-2xl bg-[#C8272D] px-6 py-4 text-white text-lg font-semibold transition hover:opacity-90 disabled:opacity-50"
                 >
-                  送信する
+                  {submitting ? '送信中...' : '送信する'}
                 </button>
               </form>
           </div>
