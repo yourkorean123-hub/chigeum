@@ -15,6 +15,49 @@ const MENU = [
   { id: 'billing',  label: '部活費・お支払い', icon: '💳' },
 ]
 
+function BillingTab({ studentId }) {
+  const [payments, setPayments] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!studentId) return
+    supabase
+      .from('payments')
+      .select('*')
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setPayments(data || [])
+        setLoading(false)
+      })
+  }, [studentId])
+
+  if (loading) return <p className="text-sm text-gray-400">読み込み中...</p>
+
+  return (
+    <div className="max-w-xl space-y-4">
+      {payments.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+          <p className="text-4xl mb-4">💳</p>
+          <p className="text-gray-400 text-sm">お支払い履歴はまだありません</p>
+        </div>
+      ) : (
+        payments.map((p) => (
+          <div key={p.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold text-[#0C447C] text-base">¥{p.amount.toLocaleString()}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{new Date(p.created_at).toLocaleDateString('ja-JP')}</p>
+              </div>
+              <span className="text-xs bg-green-100 text-green-700 font-semibold px-3 py-1 rounded-full">決済完了</span>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
+
 function StudentSettings({ studentId }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -676,7 +719,14 @@ export default function StudentDashboard() {
             </div>
           )}
 
-          {activeMenu !== 'home' && activeMenu !== 'booking' && activeMenu !== 'settings' && (
+          {activeMenu === 'billing' && (
+            <div className="max-w-3xl">
+              <h1 className="text-xl font-bold text-[#0C447C] mb-6">部活費・お支払い</h1>
+              <BillingTab studentId={user?.id} />
+            </div>
+          )}
+
+          {activeMenu !== 'home' && activeMenu !== 'booking' && activeMenu !== 'settings' && activeMenu !== 'billing' && (
             <div className="max-w-3xl">
               <h1 className="text-xl font-bold text-[#0C447C] mb-6">
                 {MENU.find(m => m.id === activeMenu)?.label}
