@@ -12,23 +12,15 @@ const MENU = [
   { id: 'inquiries', label: 'お問い合わせ管理',   icon: '📩' },
 ]
 
-const MONTHLY_SALES = [
-  { month: '1月', amount: 128000 },
-  { month: '2月', amount: 145000 },
-  { month: '3月', amount: 162000 },
-  { month: '4月', amount: 158000 },
-  { month: '5月', amount: 174000 },
-  { month: '6月', amount: 191000 },
-]
-
 function SalesChart({ data }) {
+  if (!data || data.length === 0) return null
   const max = Math.max(...data.map(d => d.amount))
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
       <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-5">売上月別推移</h3>
       <div className="flex items-end gap-3 h-40">
         {data.map((d, i) => {
-          const pct = (d.amount / max) * 100
+          const pct = max > 0 ? (d.amount / max) * 100 : 0
           return (
             <div key={i} className="flex flex-col items-center gap-1 flex-1">
               <span className="text-[10px] text-gray-500">{(d.amount / 10000).toFixed(0)}万</span>
@@ -70,21 +62,20 @@ export default function AdminDashboard() {
   const [membersLoading, setMembersLoading] = useState(false)
   const [inquiries, setInquiries] = useState([])
   const [inquiriesLoading, setInquiriesLoading] = useState(false)
+  const [kpi, setKpi] = useState(null)
+  const [monthlySales, setMonthlySales] = useState([])
+  const [payments, setPayments] = useState([])
+  const [paymentsLoading, setPaymentsLoading] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { router.push('/login'); return }
-
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', session.user.id)
         .single()
-
-      if (profile?.role !== 'admin') {
-        router.push('/dashboard/student')
-        return
-      }
+      if (profile?.role !== 'admin') { router.push('/dashboard/student'); return }
       setUser(session.user)
       setLoading(false)
     })
@@ -94,7 +85,73 @@ export default function AdminDashboard() {
     if (activeMenu === 'coaches') fetchCoaches()
     if (activeMenu === 'members') fetchMembers()
     if (activeMenu === 'inquiries') fetchInquiries()
+    if (activeMenu === 'dashboard') fetchKpi()
+    if (activeMenu === 'sales') fetchPayments()
   }, [activeMenu])
+
+  const fetchKpi = async () => {
+    const now = new Date()
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+
+    const [
+      { count: totalStudents },
+      { count: totalCoaches },
+      { count: newStudents },
+      { count: pendingInquiries },
+      { data: paymentsThisMonth },
+    ] = await Promise.all([
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student'),
+      supabase.from('coaches').select('id', { count: 'exact', head: true }).eq('is_active', true),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student').gte('created_at', firstOfMonth),
+      supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+      supabase.from('payments').select('amount').gte('created_at', firstOfMonth),
+    ])
+
+    const thisMonthSales = (paymentsThisMonth || []).reduce((sum, p) => sum + p.amount, 0)
+
+    setKpi({
+      totalStudents: totalStudents || 0,
+      totalCoaches: totalCoaches || 0,
+      newStudents: newStudents || 0,
+      pendingInquiries: pendingInquiries || 0,
+      thisMonthSales,
+    })
+
+    // 過去6ヶ月の売上集計
+    const months = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const start = d.toISOString()
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString()
+      const { data: rows } = await supabase.from('payments').select('amount').gte('created_at', start).lt('created_at', end)
+      const amount = (rows || []).reduce((sum, p) => sum + p.amount, 0)
+      months.push({ month: `${d.getMonth() + 1}月`, amount })
+    }
+    setMonthlySales(months)
+  }
+
+  const fetchPayments = async () => {
+    setPaymentsLoading(true)
+    const { data } = await supabase
+      .from('payments')
+      .select('id, student_id, amount, currency, status, created_at, stripe_payment_intent_id')
+      .order('created_at', { ascending: false })
+
+    const studentIds = [...new Set((data || []).map(p => p.student_id).filter(Boolean))]
+    let nameMap = {}
+    if (studentIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', studentIds)
+      nameMap = Object.fromEntries((profiles || []).map(p => [p.id, p.name]))
+    }
+
+    const formatted = (data || []).map(p => ({
+      ...p,
+      studentName: p.student_id ? (nameMap[p.student_id] || '不明') : '不明',
+      dateStr: new Date(p.created_at).toLocaleDateString('ja-JP'),
+    }))
+    setPayments(formatted)
+    setPaymentsLoading(false)
+  }
 
   const fetchInquiries = async () => {
     setInquiriesLoading(true)
@@ -133,10 +190,7 @@ export default function AdminDashboard() {
     const coachIds = [...new Set(rows.map((r) => r.coach_id).filter(Boolean))]
     let coachMap = {}
     if (coachIds.length > 0) {
-      const { data: coachRows } = await supabase
-        .from('coaches')
-        .select('id, name')
-        .in('id', coachIds)
+      const { data: coachRows } = await supabase.from('coaches').select('id, name').in('id', coachIds)
       coachMap = Object.fromEntries((coachRows || []).map((c) => [c.id, c.name]))
     }
 
@@ -201,7 +255,6 @@ export default function AdminDashboard() {
         <title>管理者ページ | 電話韓国語 チグム</title>
       </Head>
 
-      {/* トップバー */}
       <header className="bg-white border-b border-gray-100 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <button className="md:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -225,7 +278,6 @@ export default function AdminDashboard() {
           <div className="fixed inset-0 bg-black/30 z-20 md:hidden" onClick={() => setSidebarOpen(false)} />
         )}
 
-        {/* サイドバー */}
         <aside className={`fixed md:sticky top-[57px] left-0 h-[calc(100vh-57px)] w-56 bg-white border-r border-gray-100 z-20 flex flex-col transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
           <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
             {MENU.map(item => (
@@ -245,7 +297,6 @@ export default function AdminDashboard() {
           </div>
         </aside>
 
-        {/* メインコンテンツ */}
         <main className="flex-1 p-4 md:p-8 min-w-0">
           <div className="max-w-4xl">
 
@@ -256,18 +307,66 @@ export default function AdminDashboard() {
                   <p className="text-sm text-gray-400 mt-0.5">チグム 管理画面</p>
                 </div>
 
-                {/* KPI カード */}
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                  <StatCard label="今月の売上" value="191,000" unit="円" icon="💴" color="#A32D2D" />
-                  <StatCard label="総部員数" value="48" unit="名" icon="👥" color="#0C447C" />
-                  <StatCard label="総コーチ数" value="6" unit="名" icon="🎤" color="#0C447C" />
-                  <StatCard label="今月の練習回数" value="312" unit="回" icon="📞" color="#A32D2D" />
-                  <StatCard label="未対応お問い合わせ" value="3" unit="件" icon="📩" color="#E8651A" />
-                  <StatCard label="今月の新規部員" value="7" unit="名" icon="✨" color="#1E7E3E" />
-                </div>
+                {!kpi ? (
+                  <p className="text-sm text-gray-400">読み込み中...</p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                      <StatCard label="今月の売上" value={`¥${kpi.thisMonthSales.toLocaleString()}`} unit="" icon="💴" color="#A32D2D" />
+                      <StatCard label="総部員数" value={kpi.totalStudents} unit="名" icon="👥" color="#0C447C" />
+                      <StatCard label="アクティブコーチ数" value={kpi.totalCoaches} unit="名" icon="🎤" color="#0C447C" />
+                      <StatCard label="今月の新規部員" value={kpi.newStudents} unit="名" icon="✨" color="#1E7E3E" />
+                      <StatCard label="未対応お問い合わせ" value={kpi.pendingInquiries} unit="件" icon="📩" color="#E8651A" />
+                    </div>
+                    <SalesChart data={monthlySales} />
+                  </>
+                )}
+              </>
+            )}
 
-                {/* 売上グラフ */}
-                <SalesChart data={MONTHLY_SALES} />
+            {activeMenu === 'sales' && (
+              <>
+                <div className="mb-6 flex items-center justify-between">
+                  <h1 className="text-xl font-bold text-[#0C447C]">売上管理</h1>
+                  <span className="text-sm font-semibold text-[#A32D2D]">
+                    合計 ¥{payments.reduce((s, p) => s + p.amount, 0).toLocaleString()}
+                  </span>
+                </div>
+                {paymentsLoading ? (
+                  <p className="text-sm text-gray-400">読み込み中...</p>
+                ) : payments.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+                    <p className="text-4xl mb-4">💴</p>
+                    <p className="text-gray-400 text-sm">決済記録はまだありません</p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-[600px] w-full text-sm border-separate border-spacing-0">
+                        <thead>
+                          <tr>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">日付</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">部員名</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-right border-b border-gray-200">金額</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">ステータス</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payments.map((p) => (
+                            <tr key={p.id} className="odd:bg-white even:bg-[#F6FAFF] hover:bg-[#F0F7FF] transition">
+                              <td className="px-3 py-3 text-gray-400 border-b border-gray-100 whitespace-nowrap">{p.dateStr}</td>
+                              <td className="px-3 py-3 text-gray-800 font-medium border-b border-gray-100 whitespace-nowrap">{p.studentName}</td>
+                              <td className="px-3 py-3 text-[#A32D2D] font-bold border-b border-gray-100 whitespace-nowrap text-right">¥{p.amount.toLocaleString()}</td>
+                              <td className="px-3 py-3 border-b border-gray-100 whitespace-nowrap">
+                                <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">決済完了</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -282,7 +381,6 @@ export default function AdminDashboard() {
                   <div className="text-center py-10 text-gray-400 text-sm">読み込み中...</div>
                 ) : (
                   <>
-                    {/* 承認待ち */}
                     <div className="mb-8">
                       <h2 className="text-sm font-bold text-[#A32D2D] uppercase tracking-wider mb-3 flex items-center gap-2">
                         <span>⏳</span> 承認待ち
@@ -306,9 +404,7 @@ export default function AdminDashboard() {
                               <div className="flex-1 min-w-0">
                                 <p className="font-bold text-gray-800">{coach.name}</p>
                                 <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{coach.bio}</p>
-                                <p className="text-[10px] text-gray-300 mt-1">
-                                  登録日：{new Date(coach.created_at).toLocaleDateString('ja-JP')}
-                                </p>
+                                <p className="text-[10px] text-gray-300 mt-1">登録日：{new Date(coach.created_at).toLocaleDateString('ja-JP')}</p>
                               </div>
                               <button
                                 onClick={() => handleApprove(coach.id)}
@@ -323,7 +419,6 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    {/* 承認済み */}
                     <div>
                       <h2 className="text-sm font-bold text-[#1E7E3E] uppercase tracking-wider mb-3 flex items-center gap-2">
                         <span>✅</span> 承認済みコーチ
@@ -474,20 +569,6 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 )}
-              </>
-            )}
-
-            {activeMenu !== 'dashboard' && activeMenu !== 'coaches' && activeMenu !== 'members' && activeMenu !== 'inquiries' && (
-              <>
-                <div className="mb-6">
-                  <h1 className="text-xl font-bold text-[#0C447C]">
-                    {MENU.find(m => m.id === activeMenu)?.label}
-                  </h1>
-                </div>
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
-                  <p className="text-4xl mb-4">{MENU.find(m => m.id === activeMenu)?.icon}</p>
-                  <p className="text-gray-400 text-sm">このページは準備中です</p>
-                </div>
               </>
             )}
 
