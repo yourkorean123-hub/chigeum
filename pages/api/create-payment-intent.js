@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { amount } = req.body
+    const { amount, student_id } = req.body
 
     // 金額のバリデーション（不正な値を防ぐ）
     if (!amount || typeof amount !== 'number' || amount < 50) {
@@ -17,9 +17,12 @@ export default async function handler(req, res) {
 
     // PaymentIntent を作成（日本円・都度払い）
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount), // JPYは最小単位が「円」そのもの
+      amount: Math.round(amount),
       currency: 'jpy',
       automatic_payment_methods: { enabled: true },
+      metadata: {
+        student_id: student_id || '',
+      },
     })
 
     res.status(200).json({ clientSecret: paymentIntent.client_secret })
