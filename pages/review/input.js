@@ -48,64 +48,53 @@ export default function ReviewInput() {
   const [rating, setRating] = useState(5)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [continuousLoading, setContinuousLoading] = useState(false)
+  const [continuousDone, setContinuousDone] = useState(false)
   const [error, setError] = useState('')
+  const [session, setSession] = useState(null)
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/login')
-        return
-      }
+      const { data: { session: s } } = await supabase.auth.getSession()
+      if (!s) { router.push('/login'); return }
+      setSession(s)
 
       const studentParam = getQueryValue(router.query.student)
-      const dateParam = getQueryValue(router.query.date)
       const bookingParam = getQueryValue(router.query.booking)
 
       const { data: bookings, error: bookingsError } = await supabase
         .from('lesson_bookings')
         .select('id, student_id, duration_min, created_at')
-        .eq('coach_id', session.user.id)
+        .eq('coach_id', s.user.id)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
 
-      if (bookingsError) {
-        setError(bookingsError.message)
-        setLoading(false)
-        return
-      }
+      if (bookingsError) { setError(bookingsError.message); setLoading(false); return }
 
-      const studentIds = [...new Set(bookings?.map((booking) => booking.student_id).filter(Boolean) || [])]
+      const studentIds = [...new Set(bookings?.map((b) => b.student_id).filter(Boolean) || [])]
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
         .select('id, name')
         .in('id', studentIds)
 
-      if (profileError) {
-        setError(profileError.message)
-        setLoading(false)
-        return
-      }
+      if (profileError) { setError(profileError.message); setLoading(false); return }
 
-      const profileMap = Object.fromEntries((profiles || []).map((profile) => [profile.id, profile.name || '未登録']))
-      const memberList = (bookings || []).map((booking) => ({
-        id: booking.id,
-        bookingId: booking.id,
-        studentId: booking.student_id,
-        name: profileMap[booking.student_id] || '未登録',
-        durationMin: booking.duration_min || 10,
+      const profileMap = Object.fromEntries((profiles || []).map((p) => [p.id, p.name || '未登録']))
+      const memberList = (bookings || []).map((b) => ({
+        id: b.id,
+        bookingId: b.id,
+        studentId: b.student_id,
+        name: profileMap[b.student_id] || '未登録',
+        durationMin: b.duration_min || 10,
       }))
 
       setMembers(memberList)
 
       if (studentParam) {
-        const targetBooking = memberList.find((member) => member.studentId === studentParam && (!bookingParam || member.bookingId === Number(bookingParam)))
-          || memberList.find((member) => member.studentId === studentParam)
-        if (targetBooking) {
-          setSelectedMember({
-            ...targetBooking,
-            bookingId: bookingParam ? Number(bookingParam) : targetBooking.bookingId,
-          })
+        const target = memberList.find((m) => m.studentId === studentParam && (!bookingParam || m.bookingId === Number(bookingParam)))
+          || memberList.find((m) => m.studentId === studentParam)
+        if (target) {
+          setSelectedMember({ ...target, bookingId: bookingParam ? Number(bookingParam) : target.bookingId })
         } else {
           setSelectedMember({
             id: `${studentParam}-direct`,
@@ -126,45 +115,60 @@ export default function ReviewInput() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!selectedMember) return
-
     setSubmitting(true)
     setError('')
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/login')
-        return
-      }
+      const { data: { session: s } } = await supabase.auth.getSession()
+      if (!s) { router.push('/login'); return }
 
-      const reviewPayload = {
+      const payload = {
         student_id: selectedMember.studentId,
-        coach_id: session.user.id,
+        coach_id: s.user.id,
         rating,
         comment,
         next_point: nextPoint,
         duration_min: selectedMember.durationMin || 10,
       }
+      if (getQueryValue(router.query.date)) payload.lesson_date = getQueryValue(router.query.date)
+      if (selectedMember.bookingId) payload.booking_id = selectedMember.bookingId
 
-      if (getQueryValue(router.query.date)) {
-        reviewPayload.lesson_date = getQueryValue(router.query.date)
-      }
-      if (selectedMember.bookingId) {
-        reviewPayload.booking_id = selectedMember.bookingId
-      }
+      const { error: insertError } = await supabase.from('reviews').insert(payload)
+      if (insertError) throw insertError
 
-      const { error: insertError } = await supabase.from('reviews').insert(reviewPayload)
-
-      if (insertError) {
-        throw insertError
-      }
-
+      setSession(s)
       setSubmitted(true)
     } catch (err) {
-      console.error('[review-input] submit failed:', err)
       setError(err?.message || 'レビュー送信に失敗しました。')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleContinuous = async () => {
+    if (!selectedMember || !session) return
+    setContinuousLoading(true)
+    setError('')
+
+    try {
+      const payload = {
+        student_id: selectedMember.studentId,
+        coach_id: session.user.id,
+        rating,
+        comment: '連続授業',
+        next_point: '',
+        duration_min: 10,
+      }
+      if (getQueryValue(router.query.date)) payload.lesson_date = getQueryValue(router.query.date)
+
+      const { error: insertError } = await supabase.from('reviews').insert(payload)
+      if (insertError) throw insertError
+
+      setContinuousDone(true)
+    } catch (err) {
+      setError(err?.message || '連続授業の記録に失敗しました。')
+    } finally {
+      setContinuousLoading(false)
     }
   }
 
@@ -174,6 +178,7 @@ export default function ReviewInput() {
     setNextPoint('')
     setRating(5)
     setSubmitted(false)
+    setContinuousDone(false)
     setError('')
   }
 
@@ -185,19 +190,13 @@ export default function ReviewInput() {
 
   return (
     <div style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
-      <Head>
-        <title>レビュー入力 | 電話韓国語 チグム</title>
-      </Head>
+      <Head><title>レビュー入力 | 電話韓国語 チグム</title></Head>
       <Header />
 
       <main className="min-h-[80vh] bg-gray-50 py-10">
         <div className="max-w-2xl mx-auto px-6">
           <div className="mb-8">
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard/coach')}
-              className="mb-4 text-sm text-gray-500 hover:text-[#0C447C] flex items-center gap-1"
-            >
+            <button type="button" onClick={() => router.push('/dashboard/coach')} className="mb-4 text-sm text-gray-500 hover:text-[#0C447C] flex items-center gap-1">
               ← コーチページに戻る
             </button>
             <p className="text-sm uppercase tracking-[0.3em] text-[#A32D2D] mb-2">COACH REVIEW</p>
@@ -218,20 +217,27 @@ export default function ReviewInput() {
               <p className="text-sm text-gray-500 mb-6">
                 <span className="font-semibold text-gray-700">{selectedMember?.name}</span> さんにフィードバックが届きます。
               </p>
-              <div className="bg-gray-50 rounded-2xl p-4 text-left space-y-3 mb-6">
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">💬 コメント</p>
-                  <p className="text-sm text-gray-700">{comment}</p>
+
+              {/* 連続授業ボタン */}
+              {!continuousDone ? (
+                <div className="bg-[#0C447C]/5 border border-[#0C447C]/15 rounded-2xl p-5 mb-6">
+                  <p className="text-sm font-bold text-[#0C447C] mb-1">20分レッスンでしたか？</p>
+                  <p className="text-xs text-gray-500 mb-4">後半10分を「連続授業」として記録できます</p>
+                  <button
+                    onClick={handleContinuous}
+                    disabled={continuousLoading}
+                    className="w-full rounded-xl bg-[#0C447C] py-3 text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-50"
+                  >
+                    {continuousLoading ? '記録中...' : '連続授業を記録する'}
+                  </button>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">🎯 次回のポイント</p>
-                  <p className="text-sm text-gray-700">{nextPoint}</p>
+              ) : (
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6">
+                  <p className="text-sm font-bold text-green-700">✅ 連続授業を記録しました</p>
                 </div>
-              </div>
-              <button
-                onClick={handleReset}
-                className="w-full rounded-2xl bg-[#0C447C] py-3 text-white font-semibold text-sm hover:opacity-90 transition"
-              >
+              )}
+
+              <button onClick={handleReset} className="w-full rounded-2xl bg-[#0C447C] py-3 text-white font-semibold text-sm hover:opacity-90 transition">
                 次の部員のレビューを入力する
               </button>
             </div>
