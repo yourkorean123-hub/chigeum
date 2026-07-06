@@ -39,6 +39,105 @@ function initGrid() {
   return s
 }
 
+function RewardTab({ coachId }) {
+  const [reviews, setReviews] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
+
+  useEffect(() => {
+    if (!coachId) return
+    supabase
+      .from('reviews')
+      .select('id, student_id, lesson_date, created_at, profiles:student_id(name)')
+      .eq('coach_id', coachId)
+      .order('lesson_date', { ascending: false })
+      .then(({ data }) => {
+        setReviews(data || [])
+        setLoading(false)
+      })
+  }, [coachId])
+
+  const filteredReviews = reviews.filter(r => {
+    const dateStr = r.lesson_date || r.created_at?.slice(0, 10)
+    return dateStr && dateStr.startsWith(selectedMonth)
+  })
+
+  const lessonCount = filteredReviews.length
+  const reward = lessonCount * 500
+
+  // 過去6ヶ月の選択肢
+  const monthOptions = []
+  const now = new Date()
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = `${d.getFullYear()}年${d.getMonth() + 1}月`
+    monthOptions.push({ val, label })
+  }
+
+  if (loading) return <p className="text-sm text-gray-400">読み込み中...</p>
+
+  return (
+    <div className="max-w-2xl space-y-5">
+      <div className="flex items-center gap-3">
+        <label className="text-sm font-semibold text-gray-600">対象月：</label>
+        <select
+          value={selectedMonth}
+          onChange={e => setSelectedMonth(e.target.value)}
+          className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40"
+        >
+          {monthOptions.map(o => (
+            <option key={o.val} value={o.val}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">レッスン回数</p>
+          <div className="flex items-end gap-1">
+            <span className="text-3xl font-extrabold text-[#0C447C]">{lessonCount}</span>
+            <span className="text-sm text-gray-400 mb-1">回</span>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">報酬合計</p>
+          <div className="flex items-end gap-1">
+            <span className="text-3xl font-extrabold text-[#A32D2D]">¥{reward.toLocaleString()}</span>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">10分 × ¥500</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100">
+          <p className="text-sm font-bold text-gray-600">レッスン明細</p>
+        </div>
+        {filteredReviews.length === 0 ? (
+          <div className="p-10 text-center">
+            <p className="text-gray-400 text-sm">この月のレッスン記録はありません</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {filteredReviews.map((r, i) => (
+              <div key={r.id} className="flex items-center justify-between px-5 py-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">{r.profiles?.name || '未登録'}</p>
+                  <p className="text-xs text-gray-400">{r.lesson_date || r.created_at?.slice(0, 10)}</p>
+                </div>
+                <span className="text-sm font-bold text-[#A32D2D]">¥500</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function BookingsList({ coachId }) {
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
@@ -531,7 +630,6 @@ function AvailabilitySettings({ coachId }) {
     })
   }, [coachId])
 
-  // 横スクロール同期
   const handleScroll = () => {
     if (headerRef.current && scrollRef.current) {
       headerRef.current.scrollLeft = scrollRef.current.scrollLeft
@@ -586,7 +684,6 @@ function AvailabilitySettings({ coachId }) {
         </div>
       </div>
 
-      {/* 固定ヘッダー */}
       <div ref={headerRef} style={{ overflowX: 'hidden', minWidth: 0 }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: TIME_W + COL_W * 7 }}>
           <thead>
@@ -602,7 +699,6 @@ function AvailabilitySettings({ coachId }) {
         </table>
       </div>
 
-      {/* スクロール可能なボディ */}
       <div ref={scrollRef} onScroll={handleScroll} className="overflow-x-auto select-none" style={{ maxHeight: 400, overflowY: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: TIME_W + COL_W * 7 }}>
           <tbody>
@@ -733,6 +829,15 @@ export default function CoachDashboard() {
             {activeMenu === 'week' && (
               <><div className="mb-4"><h1 className="text-xl font-bold text-[#0C447C]">週間スケジュール</h1><p className="text-sm text-gray-400 mt-0.5">選択した曜日の講義を確認できます</p></div><WeeklySchedule coachId={coachId} /></>
             )}
+            {activeMenu === 'reward' && (
+              <>
+                <div className="mb-6">
+                  <h1 className="text-xl font-bold text-[#0C447C]">報酬確認</h1>
+                  <p className="text-sm text-gray-400 mt-0.5">レッスン回数 × ¥500で計算されます</p>
+                </div>
+                <RewardTab coachId={coachId} />
+              </>
+            )}
             {activeMenu === 'availability' && (
               <><div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">受講可能時間の設定</h1><p className="text-sm text-gray-400 mt-0.5">赤いマスをクリックしてオープン時間を設定します</p></div><AvailabilitySettings coachId={coachId} /></>
             )}
@@ -763,15 +868,6 @@ export default function CoachDashboard() {
               <>
                 <div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">予約申請一覧</h1><p className="text-sm text-gray-400 mt-0.5">生徒からのレッスン予約申請です</p></div>
                 <BookingsList coachId={coachId} />
-              </>
-            )}
-            {activeMenu !== 'today' && activeMenu !== 'week' && activeMenu !== 'approvals' && activeMenu !== 'availability' && activeMenu !== 'bookings' && (
-              <>
-                <div className="mb-6"><h1 className="text-xl font-bold text-[#0C447C]">{MENU.find(m => m.id === activeMenu)?.label}</h1></div>
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
-                  <p className="text-4xl mb-4">{MENU.find(m => m.id === activeMenu)?.icon}</p>
-                  <p className="text-gray-400 text-sm">このページは準備中です</p>
-                </div>
               </>
             )}
           </div>
