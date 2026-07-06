@@ -202,7 +202,7 @@ function CalendarWidget() {
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 
-function CheckoutForm({ amount, onSuccess }) {
+function CheckoutForm({ amount, onSuccess, studentId }) {
   const stripe = useStripe()
   const elements = useElements()
   const [paying, setPaying] = useState(false)
@@ -218,7 +218,7 @@ function CheckoutForm({ amount, onSuccess }) {
       const res = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount, student_id: studentId }),
       })
       const data = await res.json()
       if (!res.ok || !data.clientSecret) {
