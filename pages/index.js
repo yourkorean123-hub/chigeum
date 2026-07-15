@@ -43,11 +43,6 @@ export default function Home() {
                   <span className="text-sm opacity-90">（仮入部・無料）</span>
                 </div>
               </a>
-              <a href="https://utage-system.com/p/D6MRCPkR1lZy" style={{ background: '#1E6BB8' }} className="px-6 py-3 rounded-md text-white">
-                <div className="flex flex-col items-center">
-                  <span className="text-base font-semibold">仮入部する</span>
-                </div>
-              </a>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-5 bg-white border border-obang-yellow rounded-xl shadow-sm">
@@ -293,11 +288,6 @@ export default function Home() {
               <div className="flex flex-col items-center">
                 <span className="text-base font-semibold">入部届を送る</span>
                 <span className="text-sm opacity-90">（仮入部・無料）</span>
-              </div>
-            </a>
-            <a className="max-w-xs w-full bg-blue-500 text-white px-8 py-4 rounded-md font-semibold hover:bg-blue-600 transition" href="https://utage-system.com/p/D6MRCPkR1lZy">
-              <div className="flex flex-col items-center">
-                <span className="text-base font-semibold">仮入部する</span>
               </div>
             </a>
           </div>
