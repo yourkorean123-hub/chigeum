@@ -106,6 +106,27 @@ export default function Home() {
         </div>
       </section>
 
+      <section id="courses" className="py-12 bg-white">
+        <div className="max-w-5xl mx-auto px-6">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-[#0C447C] text-center mb-3">チグムで学べる5つのコース</h2>
+          <p className="text-center text-gray-600 mb-10">話したい内容から、韓国語を始められます。</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              { border: 'border-obang-red', title: '日常会話', desc: 'はじめてでも安心。挨拶から日常の表現まで' },
+              { border: 'border-obang-blue', title: 'フリートーク', desc: 'ネイティブと色んな話題で楽しく会話' },
+              { border: 'border-obang-yellow', title: '旅行韓国語', desc: '空港・ホテル・買い物・食事で使える' },
+              { border: 'border-obang-green', title: 'K-POPで韓国語', desc: '推し活・コンサート・SNSで使える表現' },
+              { border: 'border-obang-red', title: 'ドラマで韓国語', desc: '定番フレーズ・感情表現・恋愛表現' },
+            ].map((course, i) => (
+              <div key={i} className={`p-5 bg-white border-2 ${course.border} rounded-2xl shadow-sm`}>
+                <h3 className="text-lg font-bold text-[#0C447C] mb-2">{course.title}</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">{course.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="how" className="py-16">
         <div className="max-w-5xl mx-auto px-6">
           <h2 className="text-3xl font-bold mb-8">入部の流れ</h2>
