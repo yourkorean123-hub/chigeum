@@ -124,7 +124,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-          <div className="mt-6 rounded-2xl bg-[#0C447C] text-white text-center py-4 px-6 shadow-sm">
+          <div className="mt-6 rounded-2xl bg-[#E5A100] text-[#0C447C] text-center py-4 px-6 shadow-sm">
             <p className="text-base md:text-lg font-bold">🎧 すべての教材に、耳からインプットするための音声付き！</p>
           </div>
         </div>
