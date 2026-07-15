@@ -118,13 +118,13 @@ export default function Home() {
               { border: '#2E8B3A', title: 'K-POPで韓国語', desc: '推し活・コンサート・SNSで使える表現' },
               { border: '#C8272D', title: 'ドラマで韓国語', desc: '定番フレーズ・感情表現・恋愛表現' },
             ].map((course, i) => (
-              <div key={i} className="p-5 bg-white border-2 rounded-2xl shadow-sm" style={{ borderColor: course.border }}>
+              <div key={i} className="p-5 bg-white border-2 rounded-2xl shadow-sm h-full" style={{ borderColor: course.border }}>
                 <h3 className="text-lg font-bold text-[#0C447C] mb-2">{course.title}</h3>
                 <p className="text-sm text-gray-600 leading-relaxed">{course.desc}</p>
               </div>
             ))}
           </div>
-          <div className="mt-6 rounded-2xl bg-[#E5A100] text-[#0C447C] text-center py-4 px-6 shadow-sm">
+          <div className="mt-6 rounded-2xl bg-[#C8272D] text-white text-center py-4 px-6 shadow-sm">
             <p className="text-base md:text-lg font-bold">🎧 すべての教材に、耳からインプットするための音声付き！</p>
           </div>
         </div>
