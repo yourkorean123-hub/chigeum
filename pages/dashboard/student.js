@@ -188,7 +188,7 @@ function StudentSettings({ studentId }) {
   )
 }
 
-function CalendarWidget() {
+function CalendarWidget({ practiceDays = [] }) {
   const today = new Date()
   const year = today.getFullYear()
   const month = today.getMonth()
@@ -201,8 +201,6 @@ function CalendarWidget() {
     Array.from({ length: daysInMonth }, (_, i) => i + 1)
   )
   while (cells.length % 7 !== 0) cells.push(null)
-
-  const practiceDays = [5, 12, 19, 26]
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -505,6 +503,31 @@ function CoachList({ studentId }) {
   )
 }
 
+// 次回練習日を計算するヘルパー（承認済み予約の曜日から、今日以降の直近の日付を出す）
+function computeNextPractice(bookings) {
+  if (!bookings || bookings.length === 0) return null
+  const today = new Date()
+  const todayDow = today.getDay()
+
+  let best = null
+  for (const b of bookings) {
+    const dow = b.day_of_week
+    let diff = (dow - todayDow + 7) % 7
+    // 同じ曜日の場合、時間が過ぎていれば翌週にする
+    if (diff === 0) {
+      const h = b.hour ?? 0
+      const m = b.minute ?? 0
+      if (today.getHours() > h || (today.getHours() === h && today.getMinutes() >= m)) {
+        diff = 7
+      }
+    }
+    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff)
+    const candidate = { date, booking: b }
+    if (!best || candidate.date < best.date) best = candidate
+  }
+  return best
+}
+
 export default function StudentDashboard() {
   const router = useRouter()
   const [user, setUser] = useState(null)
@@ -512,6 +535,9 @@ export default function StudentDashboard() {
   const [activeMenu, setActiveMenu] = useState('home')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [hasBooking, setHasBooking] = useState(null)
+  const [bookings, setBookings] = useState([])
+  const [coachNameMap, setCoachNameMap] = useState({})
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
@@ -519,8 +545,26 @@ export default function StudentDashboard() {
       } else {
         setUser(session.user)
         setLoading(false)
-          supabase.from('profiles').select('coach_id').eq('id', session.user.id).single().then(({ data }) => {
-            setHasBooking(!!(data && data.coach_id))
+        supabase.from('profiles').select('coach_id').eq('id', session.user.id).single().then(({ data }) => {
+          setHasBooking(!!(data && data.coach_id))
+        })
+        // 承認済みの予約を取得（次回練習カード・カレンダー用）
+        supabase
+          .from('lesson_bookings')
+          .select('*')
+          .eq('student_id', session.user.id)
+          .eq('status', 'approved')
+          .then(({ data }) => {
+            const list = data || []
+            setBookings(list)
+            const coachIds = [...new Set(list.map(b => b.coach_id).filter(Boolean))]
+            if (coachIds.length > 0) {
+              supabase.from('coaches').select('id, name').in('id', coachIds).then(({ data: cs }) => {
+                const map = {}
+                ;(cs || []).forEach(c => { map[c.id] = c.name })
+                setCoachNameMap(map)
+              })
+            }
           })
       }
     })
@@ -530,6 +574,24 @@ export default function StudentDashboard() {
     await supabase.auth.signOut()
     router.push('/')
   }
+
+  const nextPractice = computeNextPractice(bookings)
+
+  // 今月の練習日（承認済み予約の曜日に該当する、今月の全日付）
+  const practiceDaysThisMonth = (() => {
+    if (!bookings || bookings.length === 0) return []
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth()
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const dows = new Set(bookings.map(b => b.day_of_week))
+    const days = []
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d)
+      if (dows.has(date.getDay())) days.push(d)
+    }
+    return days
+  })()
 
   if (loading) {
     return (
@@ -636,39 +698,38 @@ export default function StudentDashboard() {
                 <p className="text-sm text-gray-400 mt-0.5">おかえりなさい、部員さん</p>
               </div>
 
-              {hasBooking && <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              {nextPractice && (
+                <div className="grid grid-cols-1 gap-4 mb-6">
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 max-w-xs">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">次回練習</p>
+                    <p className="text-base font-bold text-[#0C447C]">
+                      {nextPractice.date.getMonth() + 1}月{nextPractice.date.getDate()}日（{DAY_NAMES[nextPractice.date.getDay()]}）
+                    </p>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      {String(nextPractice.booking.hour ?? 0).padStart(2, '0')}:{String(nextPractice.booking.minute ?? 0).padStart(2, '0')}〜
+                    </p>
+                    {coachNameMap[nextPractice.booking.coach_id] && (
+                      <div className="mt-3">
+                        <span className="inline-block text-[11px] bg-[#0C447C]/10 text-[#0C447C] font-semibold px-2 py-0.5 rounded-full">
+                          コーチ：{coachNameMap[nextPractice.booking.coach_id]}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {hasBooking && !nextPractice && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 max-w-xs">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">次回練習</p>
-                  <p className="text-base font-bold text-[#0C447C]">6月5日（木）</p>
-                  <p className="text-sm text-gray-500 mt-0.5">20:00〜20:10</p>
-                  <div className="mt-3">
-                    <span className="inline-block text-[11px] bg-[#0C447C]/10 text-[#0C447C] font-semibold px-2 py-0.5 rounded-full">コーチ：へジョン</span>
-                  </div>
+                  <p className="text-sm text-gray-400">確定した予約はまだありません</p>
                 </div>
-
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">残り回数</p>
-                  <div className="flex items-end gap-1">
-                    <span className="text-4xl font-extrabold text-[#A32D2D]">8</span>
-                    <span className="text-sm text-gray-400 mb-1">回</span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">今月の残り練習回数</p>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">補講クーポン</p>
-                  <div className="flex items-end gap-1">
-                    <span className="text-4xl font-extrabold text-[#0C447C]">2</span>
-                    <span className="text-sm text-gray-400 mb-1">枚</span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">有効期限：2026年7月末</p>
-                </div>
-              </div>}
+              )}
 
               {hasBooking &&
               <div className="mb-6">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">練習カレンダー</h2>
-                <CalendarWidget />
+                <CalendarWidget practiceDays={practiceDaysThisMonth} />
               </div>}
 
               <div>
