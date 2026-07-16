@@ -17,14 +17,30 @@ export default function Register() {
   const [frequency, setFrequency] = useState('')
   const [duration, setDuration] = useState('')
 
-  const calcPrice = () => {
-    const pricePerSession = course === '10min' ? 800 : course === '20min' ? 1600 : null
-    const sessionsPerMonth = { weekly1: 4, weekly2: 8, weekly3: 12, daily: 30 }[frequency] || null
-    if (!pricePerSession || !sessionsPerMonth) return null
-    const monthly = pricePerSession * sessionsPerMonth
-    return duration === '3months' ? Math.floor(monthly * 0.95) : monthly
+  const pricePerSession = course === '10min' ? 800 : course === '20min' ? 1600 : null
+  const sessionsPerMonth = { weekly1: 4, weekly2: 8, weekly3: 12, daily: 30 }[frequency] || null
+  const monthlyBase = pricePerSession && sessionsPerMonth ? pricePerSession * sessionsPerMonth : null
+
+  // 表示用の料金計算
+  let priceInfo = null
+  if (monthlyBase) {
+    if (duration === '3months') {
+      const total3Base = monthlyBase * 3
+      const total3Discounted = Math.floor(total3Base * 0.95)
+      priceInfo = {
+        isThreeMonths: true,
+        monthlyBase,
+        total3Base,
+        total3Discounted,
+      }
+    } else if (duration === '1month') {
+      priceInfo = {
+        isThreeMonths: false,
+        monthlyBase,
+      }
+    }
   }
-  const price = calcPrice()
+
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -236,11 +252,19 @@ export default function Register() {
                     <option value="3months">3ヶ月（5%割引）</option>
                   </select>
                 </div>
-                {price && (
+                {priceInfo && priceInfo.isThreeMonths && (
+                  <div className="rounded-2xl bg-[#FFF8E1] border border-[#FFE082] px-6 py-4 text-center">
+                    <p className="text-sm text-gray-600 mb-1">3ヶ月分の料金</p>
+                    <p className="text-2xl font-bold text-[#C8272D]">¥{priceInfo.total3Discounted.toLocaleString()}<span className="text-base font-normal text-gray-600">（3ヶ月分）</span></p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      通常 <span className="line-through">¥{priceInfo.total3Base.toLocaleString()}</span> → <span className="text-[#F57F17] font-semibold">5%割引適用</span>
+                    </p>
+                  </div>
+                )}
+                {priceInfo && !priceInfo.isThreeMonths && (
                   <div className="rounded-2xl bg-[#FFF8E1] border border-[#FFE082] px-6 py-4 text-center">
                     <p className="text-sm text-gray-600 mb-1">月額料金</p>
-                    <p className="text-2xl font-bold text-[#C8272D]">¥{price.toLocaleString()}<span className="text-base font-normal text-gray-600">/月</span></p>
-                    {duration === '3months' && <p className="text-xs text-[#F57F17] mt-1">3ヶ月プラン適用中（5%割引）</p>}
+                    <p className="text-2xl font-bold text-[#C8272D]">¥{priceInfo.monthlyBase.toLocaleString()}<span className="text-base font-normal text-gray-600">/月</span></p>
                   </div>
                 )}
                 <div className="flex items-start gap-3">
