@@ -255,7 +255,6 @@ function CheckoutForm({ amount, onSuccess, studentId }) {
     setError(null)
 
     try {
-      // サーバーに PaymentIntent の作成を依頼
       const res = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -268,7 +267,6 @@ function CheckoutForm({ amount, onSuccess, studentId }) {
         return
       }
 
-      // カード情報で実際に課金を確定
       const card = elements.getElement(CardElement)
       const { error: confirmError } = await stripe.confirmCardPayment(data.clientSecret, {
         payment_method: { card },
@@ -280,7 +278,6 @@ function CheckoutForm({ amount, onSuccess, studentId }) {
         return
       }
 
-      // 課金成功
       onSuccess()
     } catch (err) {
       setError('決済処理中にエラーが発生しました')
@@ -308,10 +305,10 @@ function CheckoutForm({ amount, onSuccess, studentId }) {
   )
 }
 
-function StripeCheckout({ amount, onSuccess }) {
+function StripeCheckout({ amount, onSuccess, studentId }) {
   return (
     <Elements stripe={stripePromise} options={{ locale: 'ja' }}>
-      <CheckoutForm amount={amount} onSuccess={onSuccess} />
+      <CheckoutForm amount={amount} onSuccess={onSuccess} studentId={studentId} />
     </Elements>
   )
 }
@@ -326,6 +323,8 @@ function SchedulePicker({ studentId }) {
   const [booking, setBooking] = useState(false)
   const [done, setDone] = useState(false)
   const [profile, setProfile] = useState(null)
+  const [loadingSchedule, setLoadingSchedule] = useState(true)
+  const [changing, setChanging] = useState(false)
 
   const calcAmount = () => {
     if (!profile) return null
@@ -340,7 +339,7 @@ function SchedulePicker({ studentId }) {
   useEffect(() => {
     if (!studentId) return
     supabase.from('profiles').select('coach_id, line_id, course, frequency, duration').eq('id', studentId).single().then(({ data }) => {
-      if (!data?.coach_id) return
+      if (!data?.coach_id) { setLoadingSchedule(false); return }
       setProfile(data)
       setCoachId(data.coach_id)
       supabase.from('coaches').select('name').eq('id', data.coach_id).single().then(({ data: c }) => {
@@ -348,6 +347,7 @@ function SchedulePicker({ studentId }) {
       })
       supabase.from('coach_schedule').select('*').eq('coach_id', data.coach_id).eq('is_open', true).order('day_of_week').order('hour').order('minute').then(({ data: slots }) => {
         setSchedule(slots || [])
+        setLoadingSchedule(false)
       })
     })
   }, [studentId])
@@ -358,6 +358,13 @@ function SchedulePicker({ studentId }) {
     acc[key].push(slot)
     return acc
   }, {})
+
+  const handleChangeCoach = async () => {
+    if (!studentId) return
+    setChanging(true)
+    await supabase.from('profiles').update({ coach_id: null }).eq('id', studentId)
+    window.location.reload()
+  }
 
   const handleBook = async () => {
     if (!selected || !studentId || !coachId) return
@@ -385,50 +392,75 @@ function SchedulePicker({ studentId }) {
     </div>
   )
 
-  if (schedule.length === 0) return (
-    <p className="text-sm text-gray-400">コーチのスケジュールを読み込み中...</p>
+  const coachBar = (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5 flex items-center justify-between">
+      <div>
+        <p className="text-xs text-gray-400 mb-0.5">担当コーチ</p>
+        <p className="font-bold text-[#0C447C]">{coachName || '（読み込み中）'}</p>
+      </div>
+      <button
+        onClick={handleChangeCoach}
+        disabled={changing}
+        className="text-xs text-[#A32D2D] border border-[#A32D2D]/30 rounded-lg px-3 py-1.5 hover:bg-[#A32D2D]/5 transition disabled:opacity-50"
+      >
+        {changing ? '変更中...' : 'コーチを変更する'}
+      </button>
+    </div>
   )
 
   return (
     <div>
-      <p className="text-sm text-gray-500 mb-4">担当コーチ：<span className="font-bold text-[#0C447C]">{coachName}</span> の空き時間から選んでください。</p>
-      <div className="space-y-4 mb-6">
-        {Object.keys(grouped).sort().map(day => (
-          <div key={day} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <p className="font-bold text-[#0C447C] text-sm mb-3">{DAY_NAMES[day]}曜日</p>
-            <div className="flex flex-wrap gap-2">
-              {grouped[day].map(slot => {
-                const isSelected = selected?.day_of_week === slot.day_of_week && selected?.hour === slot.hour && selected?.minute === slot.minute
-                return (
-                  <button
-                    key={slot.id}
-                    onClick={() => setSelected(slot)}
-                    className={`rounded-xl px-3 py-1.5 text-sm font-semibold border transition ${isSelected ? 'bg-[#A32D2D] text-white border-[#A32D2D]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#A32D2D]'}`}
-                  >
-                    {String(slot.hour).padStart(2,'0')}:{String(slot.minute).padStart(2,'0')}
-                  </button>
-                )
-              })}
-            </div>
+      {coachBar}
+
+      {loadingSchedule ? (
+        <p className="text-sm text-gray-400">スケジュールを読み込み中...</p>
+      ) : schedule.length === 0 ? (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-center">
+          <p className="text-sm text-yellow-800 font-semibold mb-1">このコーチはまだ空き時間を登録していません</p>
+          <p className="text-xs text-yellow-600">別のコーチに変更するか、コーチの登録をお待ちください。</p>
+        </div>
+      ) : (
+        <>
+          <p className="text-sm text-gray-500 mb-4">空き時間から予約したい時間を選んでください。</p>
+          <div className="space-y-4 mb-6">
+            {Object.keys(grouped).sort().map(day => (
+              <div key={day} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <p className="font-bold text-[#0C447C] text-sm mb-3">{DAY_NAMES[day]}曜日</p>
+                <div className="flex flex-wrap gap-2">
+                  {grouped[day].map(slot => {
+                    const isSelected = selected?.day_of_week === slot.day_of_week && selected?.hour === slot.hour && selected?.minute === slot.minute
+                    return (
+                      <button
+                        key={slot.id}
+                        onClick={() => setSelected(slot)}
+                        className={`rounded-xl px-3 py-1.5 text-sm font-semibold border transition ${isSelected ? 'bg-[#A32D2D] text-white border-[#A32D2D]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#A32D2D]'}`}
+                      >
+                        {String(slot.hour).padStart(2,'0')}:{String(slot.minute).padStart(2,'0')}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {selected && (
-        <div className="bg-[#FFF8E1] border border-[#FFE082] rounded-2xl p-5 mb-4">
-          <p className="font-bold text-yellow-800 mb-1">選択中の時間</p>
-          <p className="text-sm text-yellow-700">{DAY_NAMES[selected.day_of_week]}曜日 {String(selected.hour).padStart(2,'0')}:{String(selected.minute).padStart(2,'0')}〜</p>
-          <p className="text-xs text-yellow-600 mt-1">毎週この時間に10分間の練習を行います</p>
-        </div>
-      )}
+          {selected && (
+            <div className="bg-[#FFF8E1] border border-[#FFE082] rounded-2xl p-5 mb-4">
+              <p className="font-bold text-yellow-800 mb-1">選択中の時間</p>
+              <p className="text-sm text-yellow-700">{DAY_NAMES[selected.day_of_week]}曜日 {String(selected.hour).padStart(2,'0')}:{String(selected.minute).padStart(2,'0')}〜</p>
+              <p className="text-xs text-yellow-600 mt-1">毎週この時間に10分間の練習を行います</p>
+            </div>
+          )}
 
-      {selected && calcAmount() && (
-        <StripeCheckout amount={calcAmount()} onSuccess={handleBook} />
-      )}
-      {selected && !calcAmount() && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center text-sm text-yellow-700">
-          部活費を計算できません。コース・頻度・期間の登録情報を確認してください。
-        </div>
+          {selected && calcAmount() && (
+            <StripeCheckout amount={calcAmount()} onSuccess={handleBook} studentId={studentId} />
+          )}
+          {selected && !calcAmount() && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center text-sm text-yellow-700">
+              部活費を計算できません。コース・頻度・期間の登録情報を確認してください。
+            </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -503,7 +535,6 @@ function CoachList({ studentId }) {
   )
 }
 
-// 次回練習日を計算するヘルパー（承認済み予約の曜日から、今日以降の直近の日付を出す）
 function computeNextPractice(bookings) {
   if (!bookings || bookings.length === 0) return null
   const today = new Date()
@@ -513,7 +544,6 @@ function computeNextPractice(bookings) {
   for (const b of bookings) {
     const dow = b.day_of_week
     let diff = (dow - todayDow + 7) % 7
-    // 同じ曜日の場合、時間が過ぎていれば翌週にする
     if (diff === 0) {
       const h = b.hour ?? 0
       const m = b.minute ?? 0
@@ -548,7 +578,6 @@ export default function StudentDashboard() {
         supabase.from('profiles').select('coach_id').eq('id', session.user.id).single().then(({ data }) => {
           setHasBooking(!!(data && data.coach_id))
         })
-        // 承認済みの予約を取得（次回練習カード・カレンダー用）
         supabase
           .from('lesson_bookings')
           .select('*')
@@ -577,7 +606,6 @@ export default function StudentDashboard() {
 
   const nextPractice = computeNextPractice(bookings)
 
-  // 今月の練習日（承認済み予約の曜日に該当する、今月の全日付）
   const practiceDaysThisMonth = (() => {
     if (!bookings || bookings.length === 0) return []
     const today = new Date()
