@@ -26,10 +26,13 @@ export default async function handler(req, res) {
     course,
     frequency,
     duration,
+    studyCourse,
+    contractWeekdays,
     contact,
     callMethod,
     name,
     furigana,
+    planType,
   } = req.body
 
   if (!userId || !course || !frequency || !duration) {
@@ -45,10 +48,19 @@ export default async function handler(req, res) {
     name,
     furigana,
     call_method: callMethod,
+    plan_type: planType === 'flex' ? 'flex' : 'fixed',
+  }
+
+  if (studyCourse) {
+    profilePayload.study_course = studyCourse
   }
 
   if (contact) {
     profilePayload.line_id = contact
+  }
+
+  if (Array.isArray(contractWeekdays) && contractWeekdays.length > 0) {
+    profilePayload.contract_weekdays = contractWeekdays
   }
 
   const { error } = await supabaseAdmin

@@ -33,11 +33,7 @@ const COURSES = [
     color: '#0C447C',
     bg: 'bg-[#0C447C]/5',
     border: 'border-[#0C447C]/20',
-    steps: [
-      { id: 'freetalk1', label: '第1章', sub: '自己紹介・趣味', lessons: 8 },
-      { id: 'freetalk2', label: '第2章', sub: '仕事・日常', lessons: 8 },
-      { id: 'freetalk3', label: '第3章', sub: '夢・将来', lessons: 8 },
-    ],
+    lessons: 24,
   },
   {
     id: 'travel',
@@ -48,14 +44,7 @@ const COURSES = [
     color: '#1E7E3E',
     bg: 'bg-green-50',
     border: 'border-green-200',
-    steps: [
-      { id: 'travel-airport', label: '空港', sub: '出入国・案内', lessons: 5 },
-      { id: 'travel-hotel', label: 'ホテル', sub: 'チェックイン・リクエスト', lessons: 5 },
-      { id: 'travel-food', label: '食事', sub: '注文・味の表現', lessons: 5 },
-      { id: 'travel-shop', label: '買い物', sub: '値段・サイズ交渉', lessons: 5 },
-      { id: 'travel-transit', label: '交通', sub: '地下鉄・タクシー', lessons: 5 },
-      { id: 'travel-sightseeing', label: '観光', sub: 'おすすめスポット', lessons: 5 },
-    ],
+    lessons: 20,
   },
   {
     id: 'kpop',
@@ -66,12 +55,7 @@ const COURSES = [
     color: '#7B3FA0',
     bg: 'bg-purple-50',
     border: 'border-purple-200',
-    steps: [
-      { id: 'kpop-oshi', label: '推し活', sub: 'ファンサ・応援', lessons: 6 },
-      { id: 'kpop-concert', label: 'コンサート', sub: '会場・グッズ', lessons: 6 },
-      { id: 'kpop-sns', label: 'SNS', sub: 'コメント・DM', lessons: 6 },
-      { id: 'kpop-lyrics', label: '歌詞理解', sub: 'よく出るフレーズ', lessons: 6 },
-    ],
+    lessons: 15,
   },
   {
     id: 'drama',
@@ -82,12 +66,7 @@ const COURSES = [
     color: '#E8651A',
     bg: 'bg-orange-50',
     border: 'border-orange-200',
-    steps: [
-      { id: 'drama-basic', label: '定番', sub: '定番フレーズ', lessons: 8 },
-      { id: 'drama-emotion', label: '感情', sub: '喜怒哀楽', lessons: 8 },
-      { id: 'drama-love', label: '恋愛', sub: '恋愛表現', lessons: 8 },
-      { id: 'drama-daily', label: '日常', sub: '日常会話', lessons: 8 },
-    ],
+    lessons: 15,
   },
 ]
 
@@ -137,20 +116,38 @@ export default function MaterialsIndex() {
                   </div>
                 </div>
 
-                {/* ステップ一覧 */}
-                <div className="p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {course.steps.map(step => (
+                {/* Step系（章分けあり） */}
+                {course.steps && (
+                  <div className="p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {course.steps.map(step => (
+                      <Link
+                        key={step.id}
+                        href={`/materials/${step.id}-lesson1`}
+                        className="group rounded-2xl border border-gray-100 bg-gray-50 hover:border-gray-300 hover:bg-white hover:shadow-sm transition p-4 flex flex-col gap-1"
+                      >
+                        <span className="text-xs font-bold" style={{ color: course.color }}>{step.label}</span>
+                        <span className="text-sm font-semibold text-gray-800 group-hover:text-gray-900 leading-tight">{step.sub}</span>
+                        <span className="text-[11px] text-gray-400 mt-1">{step.lessons}課</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* 通し番号系（1コース1ボタン） */}
+                {!course.steps && (
+                  <div className="p-5">
                     <Link
-                      key={step.id}
-                      href={`/materials/${step.id}-lesson1`}
-                      className="group rounded-2xl border border-gray-100 bg-gray-50 hover:border-gray-300 hover:bg-white hover:shadow-sm transition p-4 flex flex-col gap-1"
+                      href={`/materials/${course.id}-lesson1`}
+                      className="group block rounded-2xl border border-gray-100 bg-gray-50 hover:border-gray-300 hover:bg-white hover:shadow-sm transition p-5 flex items-center justify-between"
                     >
-                      <span className="text-xs font-bold" style={{ color: course.color }}>{step.label}</span>
-                      <span className="text-sm font-semibold text-gray-800 group-hover:text-gray-900 leading-tight">{step.sub}</span>
-                      <span className="text-[11px] text-gray-400 mt-1">{step.lessons}課</span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-semibold text-gray-800 group-hover:text-gray-900">この教材を始める</span>
+                        <span className="text-[11px] text-gray-400">全{course.lessons}課</span>
+                      </div>
+                      <span className="text-lg" style={{ color: course.color }}>→</span>
                     </Link>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

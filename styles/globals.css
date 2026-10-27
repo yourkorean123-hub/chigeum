@@ -6,6 +6,12 @@ html, body, #__next {
   height: 100%;
 }
 
+/* スマホなどで、要素が画面幅からはみ出して横スクロール・左寄りになるのを防ぐ */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif;
   @apply bg-white text-gray-900;
@@ -77,3 +83,39 @@ body {
   pointer-events: none;
 }
 
+/* ===== 教材 印刷／PDF保存用 ===== */
+@media print {
+  /* 印刷時に隠す要素 */
+  .no-print,
+  header,
+  footer,
+  .material-tabs,
+  .print-button {
+    display: none !important;
+  }
+
+  /* 全セクションを表示（タブで隠れているものも出す） */
+  .print-section {
+    display: block !important;
+    page-break-inside: avoid;
+    margin-bottom: 16px;
+  }
+
+  /* 背景色・文字色を印刷に反映 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  @page {
+    margin: 14mm;
+  }
+}

@@ -132,9 +132,12 @@ CREATE POLICY "coach_schedule_delete"
 -- ============================================================
 -- lesson_bookings テーブル
 -- カラム: id, student_id, coach_id, day_of_week, hour, minute,
---        duration_min, method, contact, status, created_at
+--        duration_min, method, contact, status, stripe_payment_intent_id,
+--        created_at
 -- ============================================================
 ALTER TABLE public.lesson_bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lesson_bookings
+  ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT;
 
 -- 生徒は自分の予約を、コーチは担当する予約を、管理者は全件閲覧可能
 CREATE POLICY "lesson_bookings_select"

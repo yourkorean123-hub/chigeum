@@ -3,14 +3,39 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabaseClient'
+import CoachRewards from '../../components/CoachRewards'
 
 const MENU = [
   { id: 'dashboard', label: 'ダッシュボード',     icon: '📊' },
+  { id: 'schedule',  label: 'レッスン予定',       icon: '📅' },
   { id: 'members',   label: '部員（生徒）管理',   icon: '👥' },
   { id: 'coaches',   label: 'コーチ管理',         icon: '🎤' },
   { id: 'sales',     label: '売上管理',            icon: '💴' },
+  { id: 'rewards',   label: 'コーチ報酬',         icon: '🧾' },
   { id: 'inquiries', label: 'お問い合わせ管理',   icon: '📩' },
 ]
+
+const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土']
+
+// Date を 'YYYY-MM-DD' に変換
+function toDateKey(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+// ある予約が、指定した日付(dateStr)・曜日(dow)に表示すべきかを判定する。
+// ・フレックス予約(booking_type='flex')は booking_date が一致する日だけ。
+// ・固定予約は day_of_week が一致し、かつ start_date がその日以前のときだけ。
+function bookingShowsOnDate(booking, dateStr, dow) {
+  if (booking.booking_type === 'flex') {
+    return booking.booking_date === dateStr
+  }
+  if (Number(booking.day_of_week) !== dow) return false
+  if (booking.start_date && dateStr < booking.start_date) return false
+  return true
+}
 
 function SalesChart({ data }) {
   if (!data || data.length === 0) return null
@@ -23,7 +48,7 @@ function SalesChart({ data }) {
           const pct = max > 0 ? (d.amount / max) * 100 : 0
           return (
             <div key={i} className="flex flex-col items-center gap-1 flex-1">
-              <span className="text-[10px] text-gray-500">{(d.amount / 10000).toFixed(0)}万</span>
+              <span className="text-[10px] text-gray-500">{d.amount >= 10000 ? `${(d.amount / 10000).toFixed(0)}万` : `${d.amount}円`}</span>
               <div className="w-full rounded-t-lg" style={{ height: `${pct}%`, background: '#A32D2D', opacity: 0.7 + (i / data.length) * 0.3 }} />
               <span className="text-[10px] text-gray-400">{d.month}</span>
             </div>
@@ -66,6 +91,8 @@ export default function AdminDashboard() {
   const [monthlySales, setMonthlySales] = useState([])
   const [payments, setPayments] = useState([])
   const [paymentsLoading, setPaymentsLoading] = useState(false)
+  const [scheduleRows, setScheduleRows] = useState({ today: [], tomorrow: [] })
+  const [scheduleLoading, setScheduleLoading] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -87,6 +114,7 @@ export default function AdminDashboard() {
     if (activeMenu === 'inquiries') fetchInquiries()
     if (activeMenu === 'dashboard') fetchKpi()
     if (activeMenu === 'sales') fetchPayments()
+    if (activeMenu === 'schedule') fetchSchedule()
   }, [activeMenu])
 
   const fetchKpi = async () => {
@@ -118,16 +146,124 @@ export default function AdminDashboard() {
     })
 
     // 過去6ヶ月の売上集計
-    const months = []
+    const monthQueries = []
+    const monthDates = []
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const start = d.toISOString()
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString()
-      const { data: rows } = await supabase.from('payments').select('amount').gte('created_at', start).lt('created_at', end)
-      const amount = (rows || []).reduce((sum, p) => sum + p.amount, 0)
-      months.push({ month: `${d.getMonth() + 1}月`, amount })
+      monthDates.push({ d, start, end })
+      monthQueries.push(supabase.from('payments').select('amount').gte('created_at', start).lt('created_at', end))
     }
+    const results = await Promise.all(monthQueries)
+    const months = results.map((result, i) => {
+      const { data: rows } = result
+      const amount = (rows || []).reduce((sum, p) => sum + p.amount, 0)
+      return { month: `${monthDates[i].d.getMonth() + 1}月`, amount }
+    })
     setMonthlySales(months)
+  }
+
+  const fetchSchedule = async () => {
+    setScheduleLoading(true)
+
+    const today = new Date()
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+    const todayKey = toDateKey(today)
+    const tomorrowKey = toDateKey(tomorrow)
+    const todayDow = today.getDay()
+    const tomorrowDow = tomorrow.getDay()
+
+    // 有効な予約（承認済み）を取得
+    const { data: bookingRows, error } = await supabase
+      .from('lesson_bookings')
+      .select('id, student_id, coach_id, day_of_week, hour, minute, duration_min, start_date, booking_type, booking_date, status')
+      .eq('status', 'approved')
+
+    if (error) {
+      console.error('[admin-schedule] fetch bookings failed:', error)
+      setScheduleRows({ today: [], tomorrow: [] })
+      setScheduleLoading(false)
+      return
+    }
+
+    const bookings = bookingRows || []
+
+    // 確定済みの補講（confirmed_at がある approved の補講）
+    const { data: makeupRows } = await supabase
+      .from('lesson_makeup_requests')
+      .select('id, student_id, coach_id, confirmed_at, status')
+      .eq('status', 'approved')
+      .not('confirmed_at', 'is', null)
+    const makeups = makeupRows || []
+
+    // 生徒・コーチ名の解決用
+    const studentIds = [...new Set([
+      ...bookings.map((b) => b.student_id),
+      ...makeups.map((m) => m.student_id),
+    ].filter(Boolean))]
+    const coachIds = [...new Set([
+      ...bookings.map((b) => b.coach_id),
+      ...makeups.map((m) => m.coach_id),
+    ].filter(Boolean))]
+
+    let studentMap = {}
+    if (studentIds.length > 0) {
+      const { data: profs } = await supabase.from('profiles').select('id, name, line_id').in('id', studentIds)
+      studentMap = Object.fromEntries((profs || []).map((p) => [p.id, { name: p.name || '未登録', lineId: p.line_id || '' }]))
+    }
+    let coachMap = {}
+    if (coachIds.length > 0) {
+      const { data: cs } = await supabase.from('coaches').select('id, name').in('id', coachIds)
+      coachMap = Object.fromEntries((cs || []).map((c) => [c.id, c.name || '不明']))
+    }
+
+    // confirmed_at(timestamptz) から日付キー・時刻を取り出す
+    const makeupInfo = (m) => {
+      const d = new Date(m.confirmed_at)
+      return { dateKey: toDateKey(d), hour: d.getHours(), minute: d.getMinutes() }
+    }
+
+    const buildRowsForDay = (dateKey, dow) => {
+      const bookingRowsForDay = bookings
+        .filter((b) => bookingShowsOnDate(b, dateKey, dow))
+        .map((b) => {
+          const s = studentMap[b.student_id] || { name: '未登録', lineId: '' }
+          return {
+            key: `b-${b.id}`,
+            sortMin: (b.hour ?? 0) * 60 + (b.minute ?? 0),
+            time: `${String(b.hour ?? 0).padStart(2, '0')}:${String(b.minute ?? 0).padStart(2, '0')}`,
+            studentName: s.name,
+            lineId: s.lineId,
+            coachName: b.coach_id ? (coachMap[b.coach_id] || '不明') : '未割当',
+            kind: b.booking_type === 'flex' ? 'flex' : 'fixed',
+          }
+        })
+
+      const makeupRowsForDay = makeups
+        .filter((m) => makeupInfo(m).dateKey === dateKey)
+        .map((m) => {
+          const info = makeupInfo(m)
+          const s = studentMap[m.student_id] || { name: '未登録', lineId: '' }
+          return {
+            key: `m-${m.id}`,
+            sortMin: info.hour * 60 + info.minute,
+            time: `${String(info.hour).padStart(2, '0')}:${String(info.minute).padStart(2, '0')}`,
+            studentName: s.name,
+            lineId: s.lineId,
+            coachName: m.coach_id ? (coachMap[m.coach_id] || '不明') : '未割当',
+            kind: 'makeup',
+          }
+        })
+
+      return [...bookingRowsForDay, ...makeupRowsForDay].sort((a, b) => a.sortMin - b.sortMin)
+    }
+
+    setScheduleRows({
+      today: buildRowsForDay(todayKey, todayDow),
+      tomorrow: buildRowsForDay(tomorrowKey, tomorrowDow),
+    })
+    setScheduleLoading(false)
   }
 
   const fetchPayments = async () => {
@@ -182,7 +318,7 @@ export default function AdminDashboard() {
     setMembersLoading(true)
     const { data: profileRows } = await supabase
       .from('profiles')
-      .select('id, name, furigana, course, frequency, duration, call_method, line_id, coach_id, created_at')
+      .select('id, name, furigana, course, frequency, duration, study_course, line_id, coach_id, created_at')
       .eq('role', 'student')
       .order('created_at', { ascending: false })
 
@@ -205,7 +341,7 @@ export default function AdminDashboard() {
       course: COURSE_LABEL[r.course] || r.course || '',
       frequency: FREQ_LABEL[r.frequency] || r.frequency || '',
       duration: DURATION_LABEL[r.duration] || r.duration || '',
-      method: r.call_method === 'phone' ? '電話' : r.call_method === 'line' ? 'LINE' : '',
+      studyCourse: r.study_course || '未選択',
       contact: r.line_id || '',
       coachName: r.coach_id ? (coachMap[r.coach_id] || '不明') : '未割当',
       createdAt: r.created_at ? new Date(r.created_at).toLocaleDateString('ja-JP') : '',
@@ -324,6 +460,84 @@ export default function AdminDashboard() {
               </>
             )}
 
+{activeMenu === 'schedule' && (
+              <>
+                <div className="mb-6">
+                  <h1 className="text-xl font-bold text-[#0C447C]">レッスン予定</h1>
+                  <p className="text-sm text-gray-400 mt-0.5">今日・明日のレッスンです。コーチへの事前連絡の確認にお使いください。</p>
+                </div>
+
+                {scheduleLoading ? (
+                  <p className="text-sm text-gray-400">読み込み中...</p>
+                ) : (
+                  <>
+                    <div className="rounded-2xl bg-[#FFF8E1] border border-[#FFE082] p-4 mb-6">
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        レッスンの前日までに、担当コーチが生徒とLINEで友だち追加できているかご確認ください。生徒のLINE IDを添えて「明日◯時に◯◯さんのレッスンです。友だち追加は済んでいますか？」とお声がけすると確実です。
+                      </p>
+                    </div>
+
+                    {[
+                      { label: '今日のレッスン', rows: scheduleRows.today },
+                      { label: '明日のレッスン', rows: scheduleRows.tomorrow },
+                    ].map((section) => (
+                      <div key={section.label} className="mb-8">
+                        <h2 className="text-sm font-bold text-[#0C447C] uppercase tracking-wider mb-3 flex items-center gap-2">
+                          {section.label}
+                          <span className="bg-[#0C447C] text-white text-[10px] px-2 py-0.5 rounded-full">{section.rows.length}</span>
+                        </h2>
+                        {section.rows.length === 0 ? (
+                          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center text-sm text-gray-400">
+                            この日のレッスンはありません
+                          </div>
+                        ) : (
+                          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                            <div className="overflow-x-auto">
+                              <table className="min-w-[640px] w-full text-sm border-separate border-spacing-0">
+                                <thead>
+                                  <tr>
+                                    <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">時間</th>
+                                    <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">生徒名</th>
+                                    <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">生徒のLINE ID</th>
+                                    <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">担当コーチ</th>
+                                    <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">種別</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {section.rows.map((r) => (
+                                    <tr key={r.key} className="odd:bg-white even:bg-[#F6FAFF] hover:bg-[#F0F7FF] transition">
+                                      <td className="px-3 py-3 text-gray-800 font-bold border-b border-gray-100 whitespace-nowrap">{r.time}</td>
+                                      <td className="px-3 py-3 text-gray-800 font-medium border-b border-gray-100 whitespace-nowrap">{r.studentName}</td>
+                                      <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap break-all">{r.lineId || <span className="text-gray-300">未登録</span>}</td>
+                                      <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{r.coachName}</td>
+                                      <td className="px-3 py-3 border-b border-gray-100 whitespace-nowrap">
+                                        {r.kind === 'flex' && <span className="text-[11px] bg-[#0C447C]/10 text-[#0C447C] font-bold px-2 py-0.5 rounded-full">フレックス</span>}
+                                        {r.kind === 'fixed' && <span className="text-[11px] text-gray-400">固定</span>}
+                                        {r.kind === 'makeup' && <span className="text-[11px] bg-[#A32D2D]/10 text-[#A32D2D] font-bold px-2 py-0.5 rounded-full">補講</span>}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
+
+            {activeMenu === 'rewards' && (
+              <>
+                <div className="mb-6">
+                  <h1 className="text-xl font-bold text-[#0C447C]">コーチ報酬</h1>
+                  <p className="text-sm text-gray-400 mt-0.5">月ごとの支払額を確認できます</p>
+                </div>
+                <CoachRewards />
+              </>
+            )}
             {activeMenu === 'sales' && (
               <>
                 <div className="mb-6 flex items-center justify-between">
@@ -476,16 +690,16 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
-                      <table className="min-w-[800px] w-full text-sm border-separate border-spacing-0">
+                      <table className="min-w-[900px] w-full text-sm border-separate border-spacing-0">
                         <thead>
                           <tr>
                             <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">名前</th>
                             <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">フリガナ</th>
-                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">コース</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">希望コース</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">練習時間</th>
                             <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">頻度</th>
                             <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">期間</th>
-                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">受講方法</th>
-                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">連絡先</th>
+                            <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">LINE ID</th>
                             <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">担当コーチ</th>
                             <th className="bg-gray-100 text-gray-600 font-semibold px-3 py-2.5 text-left border-b border-gray-200">登録日</th>
                           </tr>
@@ -495,10 +709,14 @@ export default function AdminDashboard() {
                             <tr key={m.id} className="odd:bg-white even:bg-[#F6FAFF] hover:bg-[#F0F7FF] transition">
                               <td className="px-3 py-3 text-gray-800 font-medium border-b border-gray-100 whitespace-nowrap">{m.name}</td>
                               <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.furigana}</td>
+                              <td className="px-3 py-3 border-b border-gray-100 whitespace-nowrap">
+                                {m.studyCourse === '未選択'
+                                  ? <span className="text-gray-400">未選択</span>
+                                  : <span className="text-xs bg-[#7B3FA0]/10 text-[#7B3FA0] font-semibold px-2 py-1 rounded-full">{m.studyCourse}</span>}
+                              </td>
                               <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.course}</td>
                               <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.frequency}</td>
                               <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.duration}</td>
-                              <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.method}</td>
                               <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.contact}</td>
                               <td className="px-3 py-3 text-gray-600 border-b border-gray-100 whitespace-nowrap">{m.coachName}</td>
                               <td className="px-3 py-3 text-gray-400 border-b border-gray-100 whitespace-nowrap">{m.createdAt}</td>

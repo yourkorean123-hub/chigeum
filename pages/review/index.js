@@ -77,6 +77,20 @@ export default function ReviewIndex() {
         }))
       )
       setLoading(false)
+
+      // マイページでレビュー一覧を表示した際、未読のレビューを既読にする
+      try {
+        const now = new Date().toISOString()
+        const { error: markError } = await supabase
+          .from('reviews')
+          .update({ student_viewed_at: now })
+          .eq('student_id', session.user.id)
+          .is('student_viewed_at', null)
+
+        if (markError) console.error('[review] mark reviews viewed failed:', markError)
+      } catch (e) {
+        console.error('[review] mark reviews viewed exception:', e)
+      }
     }
 
     loadReviews()

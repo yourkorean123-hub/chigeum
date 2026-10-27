@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import Link from 'next/link'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { supabase } from '../lib/supabaseClient'
@@ -12,36 +13,25 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    console.log('[Supabase] URL:', process.env.NEXT_PUBLIC_SUPABASE_URL || 'UNDEFINED')
-    console.log('[Supabase] KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'UNDEFINED')
-  }, [])
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    console.log('[Login] Attempting signInWithPassword...')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-    console.log('[Login] Result:', { data, error })
-
     if (error) {
-      console.error('[Login] Auth error:', error.message, error.status)
-      setError(`ログイン失敗: ${error.message} (status: ${error.status})`)
+      console.error('[Login] Auth error:', error.message)
+      setError('メールアドレスまたはパスワードが正しくありません。')
       setLoading(false)
       return
     }
 
-    console.log('[Login] Success, fetching profile for user:', data.user.id)
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', data.user.id)
       .single()
-
-    console.log('[Login] Profile:', profile, 'Error:', profileError)
 
     if (profile?.role === 'admin') {
       router.push('/dashboard/admin')
@@ -70,7 +60,7 @@ export default function Login() {
 
           <div className="rounded-3xl bg-white p-8 shadow-lg border border-[#E5E7EB]">
             {error && (
-              <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 break-all">
+              <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
                 {error}
               </div>
             )}
@@ -112,7 +102,20 @@ export default function Login() {
                 {loading ? 'ログイン中...' : 'ログイン'}
               </button>
             </form>
+
+            <div className="mt-6 text-center">
+              <Link href="/forgot-password" className="text-sm text-[#0C447C] hover:underline">
+                パスワードをお忘れの方はこちら
+              </Link>
+            </div>
           </div>
+
+          <p className="text-center text-sm text-gray-500 mt-6">
+            まだ入部されていない方は{' '}
+            <Link href="/register" className="text-[#C8272D] font-semibold hover:underline">
+              入部届を送る
+            </Link>
+          </p>
         </div>
       </main>
 

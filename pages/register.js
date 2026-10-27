@@ -12,13 +12,16 @@ const supabase = createClient(
 
 export default function Register() {
   const router = useRouter()
-  const [callMethod, setCallMethod] = useState('phone')
+  const [planType, setPlanType] = useState('')
   const [course, setCourse] = useState('')
   const [frequency, setFrequency] = useState('')
   const [duration, setDuration] = useState('')
 
   const pricePerSession = course === '10min' ? 800 : course === '20min' ? 1600 : null
-  const sessionsPerMonth = { weekly1: 4, weekly2: 8, weekly3: 12, daily: 30 }[frequency] || null
+  const sessionsPerMonth = {
+    weekly1: 4, weekly2: 8, weekly3: 12, daily: 30,
+    monthly4: 4, monthly8: 8, monthly12: 12,
+  }[frequency] || null
   const monthlyBase = pricePerSession && sessionsPerMonth ? pricePerSession * sessionsPerMonth : null
 
   // 表示用の料金計算
@@ -55,10 +58,13 @@ export default function Register() {
     const email = form.email.value
     const password = form.password.value
     const passwordConfirm = form.passwordConfirm.value
+    const planTypeVal = form.planType.value
     const course = form.course.value
     const frequency = form.frequency.value
     const duration = form.duration.value
-    const contact = callMethod === 'phone' ? form.phoneNumber.value : form.lineId.value
+    const studyCourse = form.studyCourse.value
+    const contact = form.lineId.value
+    const callMethod = 'line'
 
     if (password !== passwordConfirm) {
       setError('パスワードが一致しません')
@@ -93,9 +99,11 @@ export default function Register() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: data.user.id,
+          planType: planTypeVal,
           course,
           frequency,
           duration,
+          studyCourse,
           contact,
           callMethod,
           name,
@@ -111,7 +119,7 @@ export default function Register() {
       await fetch('/api/send-registration-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, furigana, email, callMethod, contact, course, frequency, duration })
+        body: JSON.stringify({ name, furigana, email, callMethod, contact, planType: planTypeVal, course, frequency, duration, studyCourse })
       })
 
       router.push('/register/complete')
@@ -127,7 +135,7 @@ export default function Register() {
     <div>
       <Head>
         <title>入部届 | 電話韓国語 チグム</title>
-        <meta name="description" content="仮入部の申し込みフォーム。電話またはLINE通話で韓国語レッスンを始めよう。" />
+        <meta name="description" content="入部届の申し込みフォーム。LINE通話で韓国語レッスンを始めよう。" />
       </Head>
 
       <Header />
@@ -140,7 +148,7 @@ export default function Register() {
               入部届を送って<br />今すぐスタート
             </h1>
             <p className="text-base text-gray-600 max-w-2xl mx-auto">
-              まずは無料の仮入部で、あなたの韓国語学習をチグム（今）から始めましょう。お好きな通話方法とコースを選んでください。
+              あなたの韓国語学習をチグム（今）から始めましょう。お好きなコースを選んでください。
             </p>
           </div>
 
@@ -149,7 +157,7 @@ export default function Register() {
               <div className="rounded-3xl bg-white p-8 shadow-lg border border-[#E5E7EB]">
                 <h2 className="text-2xl font-bold text-[#C8272D] mb-4">申し込み内容</h2>
                 <p className="text-gray-600 leading-relaxed">
-                  ご希望のコースや通話方法を選択してください。3ヶ月プランなら5%割引でお得にスタートできます。
+                  ご希望のコースを選択してください。3ヶ月プランなら5%割引でお得にスタートできます。
                 </p>
               </div>
 
@@ -164,6 +172,20 @@ export default function Register() {
                 </div>
               </div>
 
+              <div className="rounded-3xl bg-white p-6 border border-[#E5E7EB]">
+                <h3 className="text-lg font-semibold text-[#0C447C] mb-3">コース種別について</h3>
+                <div className="space-y-3 text-sm text-gray-700">
+                  <div className="rounded-2xl bg-[#FDF2F2] p-4 border border-[#F0E1E1]">
+                    <p className="font-semibold text-[#A32D2D] mb-1">固定コース</p>
+                    <p>毎週決まった曜日・時間に練習。習慣化しやすく、続けやすい方におすすめです。</p>
+                  </div>
+                  <div className="rounded-2xl bg-[#FFF8E1] p-4 border border-[#FFE082]">
+                    <p className="font-semibold text-[#F57F17] mb-1">フレックスコース</p>
+                    <p>曜日固定なし。毎回好きな時間に予約できる回数制。シフト勤務・不規則な予定の方におすすめです。</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="rounded-3xl bg-[#FFF8E1] p-6 border border-[#FFE082]">
                 <h3 className="text-lg font-semibold text-[#F57F17] mb-2">🎉 3ヶ月プラン割引</h3>
                 <p className="text-sm text-gray-700">3ヶ月プランをお選びいただくと<b>5%割引</b>が適用されます。</p>
@@ -171,6 +193,25 @@ export default function Register() {
                   <li>10分コース：¥800 → <b>¥760/回</b></li>
                   <li>20分コース：¥1,600 → <b>¥1,520/回</b></li>
                 </ul>
+              </div>
+
+              <div className="rounded-3xl bg-[#F3E8FF] p-6 border border-[#E9D5FF]">
+                <h3 className="text-lg font-semibold text-[#7B3FA0] mb-2">📚 学べる5つのコース</h3>
+                <ul className="text-sm text-gray-700 space-y-1.5">
+                  <li><b>一般会話</b>：挨拶から日常会話まで段階的に（Step1〜5）</li>
+                  <li><b>フリートーク入門</b>：趣味・仕事・夢などテーマ別に会話</li>
+                  <li><b>旅行韓国語</b>：空港・ホテル・食事・買い物で使える</li>
+                  <li><b>K-POPで韓国語</b>：推し活・コンサート・SNS・歌詞</li>
+                  <li><b>ドラマで韓国語</b>：定番フレーズ・感情表現・恋愛表現</li>
+                </ul>
+                <p className="text-xs text-gray-500 mt-3">あとから変更もできます。迷ったら「一般会話」がおすすめです。</p>
+              </div>
+
+              <div className="rounded-3xl bg-[#E8F5E9] p-6 border border-[#C8E6C9]">
+                <h3 className="text-lg font-semibold text-[#2E7D32] mb-2">📱 練習はLINE通話で</h3>
+                <p className="text-sm text-gray-700">
+                  レッスンはすべてLINE通話で行います。電話番号を伝える必要がないので安心してご参加いただけます。
+                </p>
               </div>
             </section>
 
@@ -201,32 +242,35 @@ export default function Register() {
                   </div>
                 </div>
                 <div className="rounded-3xl bg-[#F8FAFC] p-6 border border-gray-200">
-                  <p className="text-sm font-semibold text-gray-800 mb-4">通話方法の選択（必須）</p>
-                  <div className="grid gap-3">
-                    <label className="flex items-center gap-3 rounded-2xl border border-gray-300 px-4 py-3 cursor-pointer">
-                      <input type="radio" name="callMethod" value="phone" checked={callMethod === 'phone'} onChange={() => setCallMethod('phone')} className="accent-[#C8272D]" />
-                      <span className="text-gray-700">一般電話</span>
-                    </label>
-                    <label className="flex items-center gap-3 rounded-2xl border border-gray-300 px-4 py-3 cursor-pointer">
-                      <input type="radio" name="callMethod" value="line" checked={callMethod === 'line'} onChange={() => setCallMethod('line')} className="accent-[#C8272D]" />
-                      <span className="text-gray-700">LINE通話</span>
-                    </label>
-                  </div>
-                  {callMethod === 'phone' ? (
-                    <div className="mt-5">
-                      <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="phoneNumber">電話番号</label>
-                      <input id="phoneNumber" name="phoneNumber" type="tel" required className="w-full rounded-2xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50" />
-                    </div>
-                  ) : (
-                    <div className="mt-5">
-                      <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="lineId">LINE ID</label>
-                      <input id="lineId" name="lineId" type="text" required className="w-full rounded-2xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50" />
-                    </div>
-                  )}
+                  <p className="text-sm font-semibold text-gray-800 mb-2">LINE ID（任意）</p>
+                  <p className="text-xs text-gray-500 mb-4">練習はLINE通話で行います。コーチからの連絡に使用します。</p>
+                  <input id="lineId" name="lineId" type="text" placeholder="例：your_line_id" className="w-full rounded-2xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50" />
+                  <p className="text-xs text-gray-500 mt-2 leading-relaxed">※ LINE IDの入力は任意です。分かる方はご記入いただくと、コーチからも友だち追加しやすくなります。分からない場合は空欄のままで大丈夫です。その場合は、登録後のマイページの予約画面に表示される担当コーチの「LINEで追加」ボタンから、ご自身でコーチを追加してください。</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="studyCourse">学びたいコース（必須）</label>
+                  <select id="studyCourse" name="studyCourse" required className="w-full rounded-2xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50">
+                    <option value="">選択してください</option>
+                    <option value="一般会話">一般会話（Step1〜5）</option>
+                    <option value="フリートーク入門">フリートーク入門</option>
+                    <option value="旅行韓国語">旅行韓国語</option>
+                    <option value="K-POPで韓国語">K-POPで韓国語</option>
+                    <option value="ドラマで韓国語">ドラマで韓国語</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1.5">あとから変更できます。迷ったら「一般会話」を選んでください。</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="planType">コース種別（必須）</label>
+                  <select id="planType" name="planType" required onChange={(e) => { setPlanType(e.target.value); setFrequency(''); }} className="w-full rounded-2xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50">
+                    <option value="">選択してください</option>
+                    <option value="fixed">固定コース（毎週決まった曜日・時間）</option>
+                    <option value="flex">フレックスコース（毎回好きな時間に予約・回数制）</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1.5">シフト勤務など予定が不規則な方は「フレックスコース」がおすすめです。</p>
                 </div>
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="course">希望コース（必須）</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="course">1回の練習時間（必須）</label>
                     <select id="course" name="course" required onChange={(e) => setCourse(e.target.value)} className="w-full rounded-2xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50">
                       <option value="">選択してください</option>
                       <option value="10min">10分コース（¥800/回）</option>
@@ -234,13 +278,25 @@ export default function Register() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="frequency">練習頻度（必須）</label>
-                    <select id="frequency" name="frequency" required onChange={(e) => setFrequency(e.target.value)} className="w-full rounded-2xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50">
-                      <option value="">選択してください</option>
-                      <option value="weekly1">週1回</option>
-                      <option value="weekly2">週2回</option>
-                      <option value="weekly3">週3回</option>
-                      <option value="daily">毎日</option>
+                    <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="frequency">
+                      {planType === 'flex' ? '練習回数（必須）' : '練習頻度（必須）'}
+                    </label>
+                    <select id="frequency" name="frequency" required value={frequency} onChange={(e) => setFrequency(e.target.value)} disabled={!planType} className="w-full rounded-2xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#C8272D]/50 disabled:bg-gray-100 disabled:text-gray-400">
+                      <option value="">{planType ? '選択してください' : '先にコース種別を選択'}</option>
+                      {planType === 'flex' ? (
+                        <>
+                          <option value="monthly4">月4回</option>
+                          <option value="monthly8">月8回</option>
+                          <option value="monthly12">月12回</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="weekly1">週1回</option>
+                          <option value="weekly2">週2回</option>
+                          <option value="weekly3">週3回</option>
+                          <option value="daily">毎日</option>
+                        </>
+                      )}
                     </select>
                   </div>
                 </div>

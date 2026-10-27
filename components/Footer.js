@@ -10,6 +10,9 @@ export default function Footer() {
               <a className="hover:text-obang-blue" href="/privacy">プライバシー</a>
               <a className="hover:text-obang-blue" href="/contact">お問い合わせ</a>
               <a className="hover:text-obang-blue" href="/coach-recruit">コーチ募集</a>
+              <a className="hover:text-obang-blue" href="/guide">使い方ガイド</a>
+              <a className="hover:text-obang-blue" href="/faq">よくある質問</a>
+              <a className="hover:text-obang-blue" href="/tokushoho">特定商取引法</a>
             </div>
           </div>
         </div>

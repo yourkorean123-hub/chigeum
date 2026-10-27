@@ -1,0 +1,1331 @@
+﻿import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
+import Head from 'next/head'
+import Link from 'next/link'
+import { supabase } from '../../lib/supabaseClient'
+import { loadStripe } from '@stripe/stripe-js'
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import MakeupRequest from '../../components/MakeupRequest'
+
+const MENU = [
+  { id: 'home',     label: 'ホーム',        icon: '🏠' },
+  { id: 'booking',  label: '練習予約',      icon: '📅' },
+  { id: 'makeup',   label: '補講申請',      icon: '🔁' },
+  { id: 'materials',label: '教材',          icon: '📚' },
+  { id: 'review',   label: 'レビュー',      icon: '⭐' },
+  { id: 'settings', label: '各種変更',      icon: '⚙️' },
+  { id: 'billing',  label: '部活費・お支払い', icon: '💳' },
+]
+
+// 指定した日付(dateStr: 'YYYY-MM-DD')が、予約の開始日(start_date)以降かどうかを判定する。
+// start_dateが未設定(null)の予約は、従来どおり常に対象とする（後方互換）。
+function isOnOrAfterStart(booking, dateStr) {
+  if (!booking || !booking.start_date) return true
+  return dateStr >= booking.start_date
+}
+
+function toDateKey(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function BillingTab({ studentId }) {
+  const [payments, setPayments] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!studentId) return
+    supabase
+      .from('payments')
+      .select('*')
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setPayments(data || [])
+        setLoading(false)
+      })
+  }, [studentId])
+
+  if (loading) return <p className="text-sm text-gray-400">読み込み中...</p>
+
+  return (
+    <div className="max-w-xl space-y-4">
+      {payments.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+          <p className="text-4xl mb-4">💳</p>
+          <p className="text-gray-400 text-sm">お支払い履歴はまだありません</p>
+        </div>
+      ) : (
+        payments.map((p) => (
+          <div key={p.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold text-[#0C447C] text-base">¥{p.amount.toLocaleString()}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{new Date(p.created_at).toLocaleDateString('ja-JP')}</p>
+              </div>
+              <span className="text-xs bg-green-100 text-green-700 font-semibold px-3 py-1 rounded-full">決済完了</span>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
+
+function PasswordChangeCard() {
+  const [newPassword, setNewPassword] = useState('')
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const handleChange = async () => {
+    setMessage('')
+    setError('')
+    if (newPassword.length < 6) {
+      setError('6文字以上で入力してください')
+      return
+    }
+    setSaving(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setSaving(false)
+    if (error) {
+      setError('変更に失敗しました')
+      return
+    }
+    setMessage('パスワードを変更しました')
+    setNewPassword('')
+  }
+
+  return (
+    <div className="max-w-xl mt-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+        <p className="text-sm font-semibold text-gray-700">パスワードを変更する</p>
+        <input
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder="新しいパスワード（6文字以上）"
+          className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40"
+        />
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        {message && <p className="text-sm text-green-600">{message}</p>}
+        <button
+          onClick={handleChange}
+          disabled={saving}
+          className="w-full rounded-xl bg-[#0C447C] text-white font-bold py-3 hover:opacity-90 transition disabled:opacity-50"
+        >
+          {saving ? '変更中...' : 'パスワードを変更する'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function StudentSettings({ studentId }) {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [name, setName] = useState('')
+  const [furigana, setFurigana] = useState('')
+  const [contact, setContact] = useState('')
+  const [studyCourse, setStudyCourse] = useState('')
+
+  useEffect(() => {
+    if (!studentId) return
+    let cancelled = false
+
+    const load = async () => {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('name, furigana, line_id, study_course')
+        .eq('id', studentId)
+        .maybeSingle()
+
+      if (cancelled) return
+
+      if (prof) {
+        setName(prof.name || '')
+        setFurigana(prof.furigana || '')
+        setContact(prof.line_id || '')
+        setStudyCourse(prof.study_course || '')
+      }
+
+      setLoading(false)
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [studentId])
+
+  const handleSave = async () => {
+    setSaving(true)
+    setSaved(false)
+    setErrorMsg('')
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        name,
+        furigana,
+        line_id: contact,
+        call_method: 'line',
+        study_course: studyCourse || null,
+      })
+      .eq('id', studentId)
+    if (error) {
+      console.error('[student-settings] update failed:', error)
+      setErrorMsg('保存に失敗しました。もう一度お試しください。')
+      setSaving(false)
+      return
+    }
+    setSaved(true)
+    setSaving(false)
+  }
+
+  if (loading) {
+    return <p className="text-sm text-gray-400">読み込み中...</p>
+  }
+
+  return (
+    <div className="max-w-xl">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">お名前</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setSaved(false) }}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">フリガナ</label>
+          <input
+            type="text"
+            value={furigana}
+            onChange={(e) => { setFurigana(e.target.value); setSaved(false) }}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">学びたいコース</label>
+          <select
+            value={studyCourse}
+            onChange={(e) => { setStudyCourse(e.target.value); setSaved(false) }}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40"
+          >
+            <option value="">選択してください</option>
+            <option value="一般会話">一般会話（Step1〜5）</option>
+            <option value="フリートーク入門">フリートーク入門</option>
+            <option value="旅行韓国語">旅行韓国語</option>
+            <option value="K-POPで韓国語">K-POPで韓国語</option>
+            <option value="ドラマで韓国語">ドラマで韓国語</option>
+          </select>
+          <p className="text-xs text-gray-400 mt-1.5">変更するとコーチの画面にも反映されます</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">LINE ID</label>
+          <input
+            type="text"
+            value={contact}
+            onChange={(e) => { setContact(e.target.value); setSaved(false) }}
+            placeholder="例：your_line_id"
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#A32D2D]/40"
+          />
+          <p className="text-xs text-gray-400 mt-1.5">練習はLINE通話で行います</p>
+        </div>
+
+        {errorMsg && <p className="text-sm text-red-500">{errorMsg}</p>}
+        {saved && <p className="text-sm text-green-600">変更を保存しました。</p>}
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full rounded-xl bg-[#A32D2D] text-white font-bold py-3 hover:bg-[#8a2525] transition disabled:opacity-50"
+        >
+          {saving ? '保存中...' : '変更を保存する'}
+        </button>
+
+        <p className="text-xs text-gray-400 leading-relaxed">
+          ※ 担当コーチ・レッスンの曜日や時間の変更をご希望の場合は、コーチまたは運営までご連絡ください。
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// practiceDays: この月の練習日(数値の配列) / startDays: この月の開始日(数値の配列)
+function CalendarWidget({ practiceDays = [], startDays = [] }) {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = today.getMonth()
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
+  const dayNames = ['日','月','火','水','木','金','土']
+
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const cells = Array(firstDay).fill(null).concat(
+    Array.from({ length: daysInMonth }, (_, i) => i + 1)
+  )
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-[#0C447C] text-base">{year}年 {monthNames[month]}</h3>
+        <div className="flex items-center gap-3 text-xs text-gray-400">
+          <span className="flex items-center gap-1">練習日<span className="inline-block w-2 h-2 rounded-full bg-[#A32D2D]"></span></span>
+          <span className="flex items-center gap-1">開始日<span className="inline-block w-2 h-2 rounded-full bg-green-500"></span></span>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 text-center mb-2">
+        {dayNames.map((d, i) => (
+          <div key={d} className={`text-xs font-semibold pb-1 ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'}`}>{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 text-center gap-y-1">
+        {cells.map((day, i) => {
+          const isToday = day === today.getDate()
+          const isPractice = practiceDays.includes(day)
+          const isStart = startDays.includes(day)
+          const isSun = i % 7 === 0
+          const isSat = i % 7 === 6
+          return (
+            <div key={i} className="relative flex items-center justify-center h-8">
+              {day && (
+                <>
+                  {isToday && <span className="absolute inset-0 rounded-full bg-[#0C447C] mx-auto my-auto w-7 h-7"></span>}
+                  {!isToday && (
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                      {isPractice && <span className="w-1 h-1 rounded-full bg-[#A32D2D]"></span>}
+                      {isStart && <span className="w-1 h-1 rounded-full bg-green-500"></span>}
+                    </span>
+                  )}
+                  <span className={`relative text-xs font-medium z-10
+                    ${isToday ? 'text-white' : ''}
+                    ${!isToday && isSun ? 'text-red-400' : ''}
+                    ${!isToday && isSat ? 'text-blue-400' : ''}
+                    ${!isToday && !isSun && !isSat ? 'text-gray-700' : ''}
+                  `}>{day}</span>
+                </>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+
+function CheckoutForm({ amount, onSuccess, studentId }) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [paying, setPaying] = useState(false)
+  const [error, setError] = useState(null)
+
+  const handleSubmit = async () => {
+    if (!stripe || !elements) return
+    setPaying(true)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, student_id: studentId }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.clientSecret) {
+        setError(data.error || '決済の初期化に失敗しました')
+        setPaying(false)
+        return
+      }
+
+      const card = elements.getElement(CardElement)
+      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
+        payment_method: { card },
+      })
+
+      if (confirmError) {
+        setError(confirmError.message)
+        setPaying(false)
+        return
+      }
+
+      if (!paymentIntent || !paymentIntent.id) {
+        setError('決済情報の取得に失敗しました')
+        setPaying(false)
+        return
+      }
+
+      onSuccess(paymentIntent.id)
+    } catch (err) {
+      setError('決済処理中にエラーが発生しました')
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <p className="font-bold text-[#0C447C] mb-1">お支払い情報</p>
+      <p className="text-sm text-gray-500 mb-4">月額 ¥{amount.toLocaleString()}</p>
+      <div className="border border-gray-200 rounded-xl p-3 mb-4">
+        <CardElement options={{ hidePostalCode: true, style: { base: { fontSize: '16px' } } }} />
+      </div>
+      {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+      <button
+        onClick={handleSubmit}
+        disabled={!stripe || paying}
+        className="w-full bg-[#A32D2D] text-white font-bold py-3 rounded-2xl hover:opacity-90 transition disabled:opacity-40"
+      >
+        {paying ? '処理中...' : `¥${amount.toLocaleString()} を支払う`}
+      </button>
+    </div>
+  )
+}
+
+function StripeCheckout({ amount, onSuccess, studentId }) {
+  return (
+    <Elements stripe={stripePromise} options={{ locale: 'ja' }}>
+      <CheckoutForm amount={amount} onSuccess={onSuccess} studentId={studentId} />
+    </Elements>
+  )
+}
+
+const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土']
+
+// 開始日の選択肢を作る。willmate準拠：2日後から最大4週間後まで。
+function buildStartDateOptions() {
+  const options = []
+  const base = new Date()
+  base.setHours(0, 0, 0, 0)
+  for (let i = 2; i <= 28; i += 1) {
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i)
+    options.push(d)
+  }
+  return options
+}
+
+function SchedulePicker({ studentId }) {
+  const [schedule, setSchedule] = useState([])
+  const [coachName, setCoachName] = useState('')
+  const [coachId, setCoachId] = useState(null)
+  const [selectedSlots, setSelectedSlots] = useState({})
+  const [startDate, setStartDate] = useState(null)
+  const [booking, setBooking] = useState(false)
+  const [bookingError, setBookingError] = useState('')
+  const [done, setDone] = useState(false)
+  const [profile, setProfile] = useState(null)
+  const [loadingSchedule, setLoadingSchedule] = useState(true)
+  const [changing, setChanging] = useState(false)
+  const [bookedSlots, setBookedSlots] = useState([])
+
+  const parseDurationFromCourse = (course) => {
+    if (!course) return 10
+    const match = course.match(/(\d+)/)
+    if (!match) return 10
+    return Number(match[1]) || 10
+  }
+
+  const durationMin = parseDurationFromCourse(profile?.course)
+
+  const calcAmount = () => {
+    if (!profile) return null
+    const { course, frequency, duration } = profile
+    const pricePerSession = course === '10min' ? 800 : course === '20min' ? 1600 : null
+    const sessionsPerMonth = { weekly1: 4, weekly2: 8, weekly3: 12, daily: 30 }[frequency] || null
+    if (!pricePerSession || !sessionsPerMonth) return null
+    const monthly = pricePerSession * sessionsPerMonth
+    return duration === '3months' ? Math.floor(monthly * 0.95) : monthly
+  }
+
+  const getWeeklyLimit = (frequency) => {
+    return {
+      weekly1: 1,
+      weekly2: 2,
+      weekly3: 3,
+      daily: 7,
+    }[frequency] || 0
+  }
+
+  const maxSelectableSlots = getWeeklyLimit(profile?.frequency)
+  const selectedCount = Object.keys(selectedSlots).length
+  const remainingSlots = Math.max(maxSelectableSlots - selectedCount, 0)
+
+  const startDateOptions = buildStartDateOptions()
+
+  useEffect(() => {
+    if (!studentId) return
+    supabase.from('profiles').select('coach_id, line_id, course, frequency, duration').eq('id', studentId).single().then(({ data }) => {
+      if (!data?.coach_id) { setLoadingSchedule(false); return }
+      setProfile(data)
+      setCoachId(data.coach_id)
+      supabase.from('coaches').select('name').eq('id', data.coach_id).single().then(({ data: c }) => {
+        setCoachName(c?.name || '')
+      })
+      const fetchBookedSlots = async () => {
+        const response = await fetch(`/api/coach-booked-slots?coachId=${data.coach_id}`)
+        if (!response.ok) return
+        const result = await response.json()
+        setBookedSlots(result.bookedSlots || [])
+      }
+      fetchBookedSlots()
+      supabase.from('coach_schedule').select('*').eq('coach_id', data.coach_id).eq('is_open', true).order('day_of_week').order('hour').order('minute').then(({ data: slots }) => {
+        setSchedule(slots || [])
+        setLoadingSchedule(false)
+      })
+    })
+  }, [studentId])
+
+  const GROUPED_SCHEDULE = schedule.reduce((acc, slot) => {
+    const key = slot.day_of_week
+    if (!acc[key]) acc[key] = []
+    acc[key].push(slot)
+    return acc
+  }, {})
+
+  const buildAvailableStarts = (slots = [], durationMinutes) => {
+    const step = 10
+    const needCount = Math.ceil(durationMinutes / step)
+    const sorted = [...slots].sort((a, b) => (a.hour * 60 + a.minute) - (b.hour * 60 + b.minute))
+    const openSet = new Set(sorted.map(({ hour, minute }) => `${hour}-${minute}`))
+
+    return sorted.filter(({ hour, minute }) => {
+      let currentHour = hour
+      let currentMinute = minute
+      for (let i = 1; i < needCount; i += 1) {
+        currentMinute += step
+        if (currentMinute >= 60) {
+          currentHour += 1
+          currentMinute -= 60
+        }
+        if (!openSet.has(`${currentHour}-${currentMinute}`)) {
+          return false
+        }
+      }
+      return true
+    })
+  }
+
+  const toMinutes = (hour, minute) => (hour * 60) + minute
+
+  const slotsOverlap = (aStartMin, aDurMin, bStartMin, bDurMin) => {
+    const aEnd = aStartMin + (aDurMin || 0)
+    const bEnd = bStartMin + (bDurMin || 0)
+    return aStartMin < bEnd && bStartMin < aEnd
+  }
+
+  const isSlotBooked = (slot) => {
+    if (!bookedSlots || bookedSlots.length === 0) return false
+    const sStart = toMinutes(slot.hour, slot.minute)
+    const sDur = durationMin
+    return bookedSlots.some((b) => {
+      if (Number(b.day_of_week) !== Number(slot.day_of_week)) return false
+      const bStart = toMinutes(b.hour, b.minute)
+      const bDur = b.duration_min ?? durationMin
+      return slotsOverlap(sStart, sDur, bStart, bDur)
+    })
+  }
+
+  const availableStartsByDay = Object.fromEntries(
+    Object.entries(GROUPED_SCHEDULE).map(([day, slots]) => [day, buildAvailableStarts(slots, durationMin)])
+  )
+
+  const visibleDays = Object.keys(availableStartsByDay).map((day) => Number(day)).sort((a, b) => a - b)
+
+  const handleChangeCoach = async () => {
+    if (!studentId) return
+    setChanging(true)
+    await supabase.from('profiles').update({ coach_id: null }).eq('id', studentId)
+    window.location.reload()
+  }
+
+  const handleBook = async (paymentIntentId) => {
+    const selectedValues = Object.values(selectedSlots)
+    if (selectedValues.length === 0 || !studentId || !coachId || !paymentIntentId) return
+    setBooking(true)
+    setBookingError('')
+
+    const dayOfWeekValues = [...new Set(selectedValues.map((slot) => slot.day_of_week))]
+
+    const { data: existingBookings, error: existingError } = await supabase
+      .from('lesson_bookings')
+      .select('day_of_week, hour, minute, status, duration_min')
+      .eq('coach_id', coachId)
+      .neq('status', 'cancelled')
+      .in('day_of_week', dayOfWeekValues)
+
+    if (existingError) {
+      console.error('[handleBook] existing booking check failed:', existingError)
+      setBookingError('予約状況の確認に失敗しました。再度お試しください。')
+      setBooking(false)
+      return
+    }
+
+    const conflict = (existingBookings || []).find((b) => {
+      return selectedValues.some((s) => {
+        if (Number(s.day_of_week) !== Number(b.day_of_week)) return false
+        const sStart = toMinutes(s.hour, s.minute)
+        const sDur = durationMin
+        const bStart = toMinutes(b.hour, b.minute)
+        const bDur = b.duration_min ?? durationMin
+        return slotsOverlap(sStart, sDur, bStart, bDur)
+      })
+    })
+
+    if (conflict) {
+      setBookingError('その時間は予約済みです')
+      setBooking(false)
+      return
+    }
+
+    const startDateStr = startDate ? toDateKey(startDate) : null
+
+    const rows = selectedValues.map((slot) => ({
+      student_id: studentId,
+      coach_id: coachId,
+      day_of_week: slot.day_of_week,
+      hour: slot.hour,
+      minute: slot.minute,
+      duration_min: durationMin,
+      method: 'LINE',
+      contact: profile?.line_id || '',
+      status: 'pending',
+      stripe_payment_intent_id: paymentIntentId,
+      start_date: startDateStr,
+    }))
+
+    const { error: insertError } = await supabase.from('lesson_bookings').insert(rows)
+    if (insertError) {
+      console.error('[handleBook] lesson_bookings insert failed:', insertError)
+      const duplicateMessage = insertError.message?.includes('duplicate') || insertError.code === '23505'
+      setBookingError(duplicateMessage ? 'その時間は予約済みです' : '予約の保存に失敗しました。')
+      setBooking(false)
+      return
+    }
+
+    setBooking(false)
+    setDone(true)
+  }
+
+  if (done) return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+      <p className="text-4xl mb-4">🎉</p>
+      <p className="font-bold text-[#0C447C] text-lg mb-2">予約リクエストを送りました！</p>
+      <p className="text-sm text-gray-500">コーチから確認の連絡が届きます。</p>
+    </div>
+  )
+
+  const coachBar = (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5 flex items-center justify-between">
+      <div>
+        <p className="text-xs text-gray-400 mb-0.5">担当コーチ</p>
+        <p className="font-bold text-[#0C447C]">{coachName || '（読み込み中）'}</p>
+      </div>
+      <button
+        onClick={handleChangeCoach}
+        disabled={changing}
+        className="text-xs text-[#A32D2D] border border-[#A32D2D]/30 rounded-lg px-3 py-1.5 hover:bg-[#A32D2D]/5 transition disabled:opacity-50"
+      >
+        {changing ? '変更中...' : 'コーチを変更する'}
+      </button>
+    </div>
+  )
+
+  return (
+    <div>
+      {coachBar}
+
+      {loadingSchedule ? (
+        <p className="text-sm text-gray-400">スケジュールを読み込み中...</p>
+      ) : schedule.length === 0 ? (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-center">
+          <p className="text-sm text-yellow-800 font-semibold mb-1">このコーチはまだ空き時間を登録していません</p>
+          <p className="text-xs text-yellow-600">別のコーチに変更するか、コーチの登録をお待ちください。</p>
+        </div>
+      ) : (
+        <>
+          <p className="text-sm text-gray-500 mb-4">空き時間から予約したい時間を選んでください。</p>
+          {bookingError && <p className="text-sm text-red-500 mb-4">{bookingError}</p>}
+          {maxSelectableSlots > 0 && (
+            <p className="text-sm text-gray-600 mb-4">あと{remainingSlots}枠選択できます（上限 {maxSelectableSlots} 回/週）</p>
+          )}
+          <div className="space-y-4 mb-6">
+            {visibleDays.map((day) => {
+              const dayKey = String(day)
+              const daySlots = availableStartsByDay[dayKey] || []
+              const selectedSlot = selectedSlots[dayKey]
+              return (
+                <div key={day} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                  <p className="font-bold text-[#0C447C] text-sm mb-3">{DAY_NAMES[day]}曜日</p>
+                  <div className="flex flex-wrap gap-2">
+                    {daySlots.length === 0 ? (
+                      <p className="text-sm text-gray-400">この曜日は空き時間がありません</p>
+                    ) : (
+                      daySlots.map(slot => {
+                        const slotWithDay = { ...slot, day_of_week: Number(day) }
+                        const slotKey = `${day}-${slot.hour}-${slot.minute}`
+                        const selectedStart = selectedSlot ? selectedSlot.hour * 60 + selectedSlot.minute : null
+                        const slotTime = slot.hour * 60 + slot.minute
+                        const isSelected = selectedStart !== null && slotTime >= selectedStart && slotTime < selectedStart + durationMin
+                        const isBooked = isSlotBooked(slotWithDay)
+                        const disableByLimit = !isSelected && selectedCount >= maxSelectableSlots && maxSelectableSlots > 0
+                        return (
+                          <button
+                            key={slotKey}
+                            type="button"
+                            onClick={() => {
+                              if (isBooked || disableByLimit) return
+                              setSelectedSlots((prev) => {
+                                const existing = prev[day]
+                                if (existing?.hour === slot.hour && existing?.minute === slot.minute) {
+                                  const next = { ...prev }
+                                  delete next[day]
+                                  return next
+                                }
+                                return { ...prev, [day]: { ...slotWithDay } }
+                              })
+                            }}
+                            disabled={isBooked || disableByLimit}
+                            className={`rounded-xl px-3 py-1.5 text-sm font-semibold border transition ${isSelected ? 'bg-[#A32D2D] text-white border-[#A32D2D]' : isBooked || disableByLimit ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:border-[#A32D2D]'}`}
+                          >
+                            {String(slot.hour).padStart(2,'0')}:{String(slot.minute).padStart(2,'0')}
+                            {isBooked && <span className="ml-2 text-[10px] text-gray-500">満</span>}
+                            {!isBooked && disableByLimit && <span className="ml-2 text-[10px] text-gray-500">選択上限</span>}
+                          </button>
+                        )
+                      })
+                    )}
+                  </div>
+                  {selectedSlot && (
+                    <p className="mt-3 text-sm text-[#0C447C]">選択済み: {String(selectedSlot.hour).padStart(2,'0')}:{String(selectedSlot.minute).padStart(2,'0')}〜{String((selectedSlot.hour * 60 + selectedSlot.minute + durationMin) / 60 | 0).padStart(2,'0')}:{String((selectedSlot.minute + durationMin) % 60).padStart(2,'0')}</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {Object.keys(selectedSlots).length > 0 && (
+            <div className="bg-[#FFF8E1] border border-[#FFE082] rounded-2xl p-5 mb-4">
+              <p className="font-bold text-yellow-800 mb-1">選択済みの時間</p>
+              <div className="space-y-2 text-sm text-yellow-700">
+                {Object.entries(selectedSlots).map(([day, slot]) => {
+                  const start = `${String(slot.hour).padStart(2,'0')}:${String(slot.minute).padStart(2,'0')}`
+                  const endTotal = slot.hour * 60 + slot.minute + durationMin
+                  const endHour = Math.floor(endTotal / 60)
+                  const endMin = endTotal % 60
+                  const end = `${String(endHour).padStart(2,'0')}:${String(endMin).padStart(2,'0')}`
+                  return (
+                    <p key={day}>{DAY_NAMES[Number(day)]}曜日 {start}〜{end}</p>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-yellow-600 mt-1">毎週この時間に{durationMin}分間の練習を行います</p>
+            </div>
+          )}
+
+          {Object.keys(selectedSlots).length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+              <p className="font-bold text-[#0C447C] mb-1">レッスン開始日</p>
+              <p className="text-xs text-gray-500 mb-3">この日付以降の、選んだ曜日から練習が始まります（2日後〜4週間後から選べます）。</p>
+              <div className="flex flex-wrap gap-2">
+                {startDateOptions.map((d) => {
+                  const key = toDateKey(d)
+                  const isSelected = startDate && toDateKey(startDate) === key
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setStartDate(d)}
+                      className={`rounded-xl px-3 py-1.5 text-sm font-semibold border transition ${isSelected ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700 border-gray-200 hover:border-green-500'}`}
+                    >
+                      {d.getMonth() + 1}/{d.getDate()}（{DAY_NAMES[d.getDay()]}）
+                    </button>
+                  )
+                })}
+              </div>
+              {startDate && (
+                <p className="mt-3 text-sm text-green-700">開始日：{startDate.getFullYear()}年{startDate.getMonth() + 1}月{startDate.getDate()}日（{DAY_NAMES[startDate.getDay()]}）</p>
+              )}
+            </div>
+          )}
+
+          {Object.keys(selectedSlots).length > 0 && !startDate && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center text-sm text-yellow-700 mb-4">
+              レッスン開始日を選んでください。
+            </div>
+          )}
+
+          {Object.keys(selectedSlots).length > 0 && startDate && calcAmount() && (
+            <StripeCheckout amount={calcAmount()} onSuccess={handleBook} studentId={studentId} />
+          )}
+          {Object.keys(selectedSlots).length > 0 && startDate && !calcAmount() && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center text-sm text-yellow-700">
+              部活費を計算できません。コース・頻度・期間の登録情報を確認してください。
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function CoachList({ studentId }) {
+  const [coaches, setCoaches] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selecting, setSelecting] = useState(null)
+  const [selected, setSelected] = useState(null)
+
+  useEffect(() => {
+    supabase.from('coaches').select('id, name, photo_url, bio, tags, availability_text').eq('is_active', true).order('display_order').then(({ data }) => {
+      setCoaches(data || [])
+      setLoading(false)
+    })
+    if (studentId) {
+      supabase.from('profiles').select('coach_id').eq('id', studentId).single().then(({ data }) => {
+        if (data) setSelected(data.coach_id)
+      })
+    }
+  }, [studentId])
+
+  const handleSelect = async (coachId) => {
+    if (!studentId) return
+    setSelecting(coachId)
+    await supabase.from('profiles').update({ coach_id: coachId }).eq('id', studentId)
+    setSelected(coachId)
+    setSelecting(null)
+    window.location.reload()
+  }
+
+  if (loading) return <p className="text-sm text-gray-400">読み込み中...</p>
+  if (coaches.length === 0) return <p className="text-sm text-gray-400">現在コーチは登録されていません</p>
+
+  return (
+    <div className="space-y-4">
+      {coaches.map(coach => (
+        <div key={coach.id} className={`bg-white rounded-2xl border shadow-sm p-6 ${selected === coach.id ? 'border-[#A32D2D]' : 'border-gray-100'}`}>
+          <div className="flex gap-4">
+            {coach.photo_url ? (
+              <img src={coach.photo_url} alt={coach.name} className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-2xl">👤</div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h3 className="font-bold text-[#0C447C] text-base">{coach.name}</h3>
+                {selected === coach.id && <span className="text-[11px] bg-[#A32D2D]/10 text-[#A32D2D] font-semibold px-2 py-0.5 rounded-full">選択中</span>}
+              </div>
+              {coach.bio && <p className="text-sm text-gray-600 mb-2">{coach.bio}</p>}
+              {coach.tags && coach.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {coach.tags.map((tag, i) => (
+                    <span key={i} className="text-[11px] bg-[#0C447C]/10 text-[#0C447C] px-2 py-0.5 rounded-full">{tag}</span>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={() => handleSelect(coach.id)}
+                disabled={selecting === coach.id || selected === coach.id}
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${selected === coach.id ? 'bg-gray-100 text-gray-400 cursor-default' : 'bg-[#A32D2D] text-white hover:opacity-90'} disabled:opacity-50`}
+              >
+                {selecting === coach.id ? '処理中...' : selected === coach.id ? '選択済み' : 'このコーチを選ぶ'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function computeNextPractice(bookings) {
+  if (!bookings || bookings.length === 0) return null
+  const today = new Date()
+  const todayDow = today.getDay()
+
+  let best = null
+  for (const b of bookings) {
+    const dow = b.day_of_week
+    let diff = (dow - todayDow + 7) % 7
+    if (diff === 0) {
+      const h = b.hour ?? 0
+      const m = b.minute ?? 0
+      if (today.getHours() > h || (today.getHours() === h && today.getMinutes() >= m)) {
+        diff = 7
+      }
+    }
+    let date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff)
+
+    // 開始日がある予約は、開始日以降の最初の該当曜日まで進める。
+    if (b.start_date) {
+      let guard = 0
+      while (toDateKey(date) < b.start_date && guard < 60) {
+        date = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 7)
+        guard += 1
+      }
+    }
+
+    const candidate = { date, booking: b }
+    if (!best || candidate.date < best.date) best = candidate
+  }
+  return best
+}
+
+export default function StudentDashboard() {
+  const router = useRouter()
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [activeMenu, setActiveMenu] = useState('home')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [hasBooking, setHasBooking] = useState(null)
+  const [bookings, setBookings] = useState([])
+  const [coachNameMap, setCoachNameMap] = useState({})
+  const [profile, setProfile] = useState(null)
+  const [makeupUnreadCount, setMakeupUnreadCount] = useState(0)
+  const [reviewUnreadCount, setReviewUnreadCount] = useState(0)
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/login')
+        return
+      }
+      setUser(session.user)
+      setLoading(false)
+      fetchMakeupUnreadCount(session.user.id)
+      supabase.from('profiles').select('coach_id, course, frequency, duration, study_course, contract_weekdays, contract_start_date').eq('id', session.user.id).single().then(({ data }) => {
+        setHasBooking(!!(data && data.coach_id))
+        setProfile(data || null)
+      })
+      supabase
+        .from('lesson_bookings')
+        .select('*')
+        .eq('student_id', session.user.id)
+        .eq('status', 'approved')
+        .then(({ data }) => {
+          const list = data || []
+          setBookings(list)
+          const coachIds = [...new Set(list.map(b => b.coach_id).filter(Boolean))]
+          if (coachIds.length > 0) {
+            supabase.from('coaches').select('id, name').in('id', coachIds).then(({ data: cs }) => {
+              const map = {}
+              ;(cs || []).forEach(c => { map[c.id] = c.name })
+              setCoachNameMap(map)
+            })
+          }
+        })
+    }
+    loadSession()
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
+
+  const fetchMakeupUnreadCount = async (studentId) => {
+    if (!studentId) return
+    const { data, error } = await supabase
+      .from('lesson_makeup_requests')
+      .select('id')
+      .eq('student_id', studentId)
+      .in('status', ['approved', 'rejected'])
+      .is('student_viewed_at', null)
+
+    if (error) {
+      console.error('[student] fetch makeup unread failed:', error)
+      return
+    }
+    setMakeupUnreadCount((data || []).length)
+  }
+
+  const fetchReviewUnreadCount = async (studentId) => {
+    if (!studentId) return
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('student_id', studentId)
+      .is('student_viewed_at', null)
+
+    if (error) {
+      console.error('[student] fetch review unread failed:', error)
+      return
+    }
+    setReviewUnreadCount((data || []).length)
+  }
+
+  const markReviewsAsViewed = async (studentId) => {
+    if (!studentId) return
+    const now = new Date().toISOString()
+    const { error } = await supabase
+      .from('reviews')
+      .update({ student_viewed_at: now })
+      .eq('student_id', studentId)
+      .is('student_viewed_at', null)
+
+    if (error) console.error('[student] mark reviews viewed failed:', error)
+  }
+
+  const markMakeupAsViewed = async (studentId) => {
+    if (!studentId) return
+    const now = new Date().toISOString()
+    const { error } = await supabase
+      .from('lesson_makeup_requests')
+      .update({ student_viewed_at: now })
+      .eq('student_id', studentId)
+      .in('status', ['approved', 'rejected'])
+      .is('student_viewed_at', null)
+
+    if (error) {
+      console.error('[student] mark makeup viewed failed:', error)
+    }
+  }
+
+  const userId = user?.id
+
+  useEffect(() => {
+    if (!userId) return
+    fetchMakeupUnreadCount(userId)
+  }, [userId])
+
+  useEffect(() => {
+    if (activeMenu !== 'makeup' || !userId) return
+    const markRead = async () => {
+      await markMakeupAsViewed(userId)
+      await fetchMakeupUnreadCount(userId)
+    }
+    markRead()
+  }, [activeMenu, userId])
+
+  useEffect(() => {
+    if (activeMenu !== 'review' || !userId) return
+    const markRead = async () => {
+      await markReviewsAsViewed(userId)
+      await fetchReviewUnreadCount(userId)
+    }
+    markRead()
+  }, [activeMenu, userId])
+
+  useEffect(() => {
+    if (!userId) return
+    fetchReviewUnreadCount(userId)
+  }, [userId])
+
+  const nextPractice = computeNextPractice(bookings)
+
+  const todayKeyForCalendar = toDateKey(new Date())
+
+  const practiceDaysThisMonth = (() => {
+    if (!bookings || bookings.length === 0) return []
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth()
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const days = []
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d)
+      const dateKey = toDateKey(date)
+      // その日を練習日とする予約が1件でもあれば練習日。開始日より前は除外。
+      const isPracticeDay = bookings.some((b) =>
+        b.day_of_week === date.getDay() && isOnOrAfterStart(b, dateKey)
+      )
+      if (isPracticeDay) days.push(d)
+    }
+    return days
+  })()
+
+  const startDaysThisMonth = (() => {
+    if (!bookings || bookings.length === 0) return []
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth()
+    const days = new Set()
+    bookings.forEach((b) => {
+      if (!b.start_date) return
+      const parts = String(b.start_date).split('-')
+      if (parts.length !== 3) return
+      const sy = Number(parts[0])
+      const sm = Number(parts[1]) - 1
+      const sd = Number(parts[2])
+      if (sy === year && sm === month) days.add(sd)
+    })
+    return [...days]
+  })()
+
+  const formatCourseLabel = (course) => {
+    if (course === '10min') return '10分コース'
+    if (course === '20min') return '20分コース'
+    return '未設定'
+  }
+
+  const formatFrequencyLabel = (frequency) => {
+    if (frequency === 'weekly1') return '週1回'
+    if (frequency === 'weekly2') return '週2回'
+    if (frequency === 'weekly3') return '週3回'
+    if (frequency === 'daily') return '毎日'
+    return '未設定'
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-400 text-sm">読み込み中...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
+      <Head>
+        <title>マイページ | 電話韓国語 チグム</title>
+      </Head>
+
+      <header className="bg-white border-b border-gray-100 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-30">
+        <div className="flex items-center gap-3">
+          <button
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            <span className="block w-5 h-0.5 bg-gray-600 mb-1"></span>
+            <span className="block w-5 h-0.5 bg-gray-600 mb-1"></span>
+            <span className="block w-5 h-0.5 bg-gray-600"></span>
+          </button>
+          <Link href="/" className="font-bold text-[#A32D2D] text-lg tracking-tight">chigum korean</Link>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="hidden sm:block text-xs text-gray-400">{user?.email}</span>
+          <button
+            onClick={handleLogout}
+            className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition"
+          >
+            ログアウト
+          </button>
+        </div>
+      </header>
+
+      <div className="flex">
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black/30 z-20 md:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
+        <aside className={`
+          fixed md:sticky top-[57px] left-0 h-[calc(100vh-57px)] w-56 bg-white border-r border-gray-100 z-20 flex flex-col
+          transition-transform duration-200
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
+          <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+            {MENU.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  if (item.id === 'review') {
+                    router.push('/review')
+                    return
+                  }
+                  if (item.id === 'materials') {
+                    router.push('/materials')
+                    return
+                  }
+                  setActiveMenu(item.id)
+                  setSidebarOpen(false)
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition
+                  ${activeMenu === item.id
+                    ? 'bg-[#A32D2D]/10 text-[#A32D2D]'
+                    : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+              >
+                <span className="text-base">{item.icon}</span>
+                <span>{item.label}</span>
+                {item.id === 'makeup' && makeupUnreadCount > 0 && (
+                  <span className="ml-auto min-w-[18px] h-5 px-2 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+                    {makeupUnreadCount}
+                  </span>
+                )}
+                {item.id === 'review' && reviewUnreadCount > 0 && (
+                  <span className="ml-auto min-w-[18px] h-5 px-2 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+                    {reviewUnreadCount}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+          <div className="p-4 border-t border-gray-100">
+            <p className="text-[10px] text-gray-400 text-center">電話韓国語 チグム</p>
+          </div>
+        </aside>
+
+        <main className="flex-1 p-4 md:p-8 min-w-0">
+
+          {hasBooking === false && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">👋</span>
+                  <div>
+                    <p className="font-bold text-yellow-800 text-sm">まずコーチを選びましょう！</p>
+                    <p className="text-yellow-600 text-xs mt-0.5">コーチを選ぶと練習予約ができるようになります。</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveMenu('booking')}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold text-xs px-4 py-2 rounded-xl transition"
+                >
+                  コーチを選ぶ →
+                </button>
+              </div>
+            )}
+
+            {activeMenu === 'home' && (
+            <div className="max-w-3xl">
+              <div className="mb-6">
+                <h1 className="text-xl font-bold text-[#0C447C]">ホーム</h1>
+                <p className="text-sm text-gray-400 mt-0.5">おかえりなさい、部員さん</p>
+              </div>
+
+              {profile && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6 max-w-xl">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">ご契約プラン</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <p className="text-base font-bold text-[#0C447C]">{formatCourseLabel(profile.course)}</p>
+                      <p className="text-sm text-gray-500 mt-1">{formatFrequencyLabel(profile.frequency)}</p>
+                      {profile.study_course && (
+                        <p className="text-sm text-gray-500 mt-1">学習コース：{profile.study_course}</p>
+                      )}
+                    </div>
+                    <div className="rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] px-4 py-3 text-sm text-gray-600">
+                      <p>契約開始日</p>
+                      <p className="font-semibold text-[#0C447C] mt-1">{profile.contract_start_date ? new Date(profile.contract_start_date).toLocaleDateString('ja-JP') : '未設定'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {nextPractice && (
+                <div className="grid grid-cols-1 gap-4 mb-6">
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 max-w-xs">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">次回練習</p>
+                    <p className="text-base font-bold text-[#0C447C]">
+                      {nextPractice.date.getMonth() + 1}月{nextPractice.date.getDate()}日（{DAY_NAMES[nextPractice.date.getDay()]}）
+                    </p>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      {String(nextPractice.booking.hour ?? 0).padStart(2, '0')}:{String(nextPractice.booking.minute ?? 0).padStart(2, '0')}〜
+                    </p>
+                    {coachNameMap[nextPractice.booking.coach_id] && (
+                      <div className="mt-3">
+                        <span className="inline-block text-[11px] bg-[#0C447C]/10 text-[#0C447C] font-semibold px-2 py-0.5 rounded-full">
+                          コーチ：{coachNameMap[nextPractice.booking.coach_id]}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {hasBooking && !nextPractice && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 max-w-xs">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">次回練習</p>
+                  <p className="text-sm text-gray-400">確定した予約はまだありません</p>
+                </div>
+              )}
+
+              {hasBooking &&
+              <div className="mb-6">
+                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">練習カレンダー</h2>
+                <CalendarWidget practiceDays={practiceDaysThisMonth} startDays={startDaysThisMonth} />
+              </div>}
+
+              <div>
+                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">クイックアクション</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    { label: '練習を予約する', icon: '📅', menu: 'booking' },
+                    { label: '教材を見る',     icon: '📚', menu: 'materials' },
+                    { label: '部活費を確認',   icon: '💳', menu: 'billing' },
+                  ].map((a) => (
+                    <button
+                      key={a.menu}
+                      onClick={() => {
+                        if (a.menu === 'materials') {
+                          router.push('/materials')
+                          return
+                        }
+                        setActiveMenu(a.menu)
+                      }}
+                      className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center gap-2 hover:border-[#A32D2D]/30 hover:shadow-md transition text-center"
+                    >
+                      <span className="text-2xl">{a.icon}</span>
+                      <span className="text-xs font-semibold text-gray-600">{a.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeMenu === 'booking' && (
+            <div className="max-w-3xl">
+              <h1 className="text-xl font-bold text-[#0C447C] mb-6">
+                {hasBooking ? '練習時間を選ぶ' : 'コーチを選ぶ'}
+              </h1>
+              {hasBooking
+                ? <SchedulePicker studentId={user?.id} />
+                : <CoachList studentId={user?.id} />
+              }
+            </div>
+          )}
+
+          {activeMenu === 'settings' && (
+            <div className="max-w-3xl">
+              <h1 className="text-xl font-bold text-[#0C447C] mb-1">各種変更</h1>
+              <p className="text-sm text-gray-400 mb-6">登録情報を変更できます</p>
+              {profile && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">ご契約プラン</p>
+                  <p className="text-base font-bold text-[#0C447C]">{formatCourseLabel(profile.course)}</p>
+                  <p className="text-sm text-gray-500 mt-1">{formatFrequencyLabel(profile.frequency)}</p>
+                </div>
+              )}
+              <StudentSettings studentId={user?.id} />
+              <PasswordChangeCard />
+            </div>
+          )}
+
+          {activeMenu === 'makeup' && (
+            <div className="max-w-3xl">
+              <h1 className="text-xl font-bold text-[#0C447C] mb-6">補講申請</h1>
+              <MakeupRequest studentId={user?.id} />
+            </div>
+          )}
+
+          {activeMenu === 'billing' && (
+            <div className="max-w-3xl">
+              <h1 className="text-xl font-bold text-[#0C447C] mb-6">部活費・お支払い</h1>
+              <BillingTab studentId={user?.id} />
+            </div>
+          )}
+
+          {!['home', 'booking', 'settings', 'billing', 'makeup'].includes(activeMenu) && (
+            <div className="max-w-3xl">
+              <h1 className="text-xl font-bold text-[#0C447C] mb-6">
+                {MENU.find(m => m.id === activeMenu)?.label}
+              </h1>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+                <p className="text-4xl mb-4">{MENU.find(m => m.id === activeMenu)?.icon}</p>
+                <p className="text-gray-400 text-sm">このページは準備中です</p>
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+    </div>
+  )
+}

@@ -12,7 +12,6 @@ const SECTIONS = [
     content: `当サービスでは、以下の個人情報を取得することがあります。
 ・お名前（フリガナ含む）
 ・メールアドレス
-・電話番号
 ・LINE ID
 ・お支払い情報
 ・練習の記録・レビュー情報
@@ -77,7 +76,7 @@ export default function Privacy() {
           <div className="mb-10">
             <p className="text-sm uppercase tracking-[0.3em] text-[#A32D2D] mb-3">PRIVACY</p>
             <h1 className="text-2xl md:text-3xl font-extrabold text-[#0C447C] mb-3">プライバシーポリシー</h1>
-            <p className="text-sm text-gray-500">最終更新日：2026年6月1日</p>
+            <p className="text-sm text-gray-500">最終更新日：2026年7月23日</p>
           </div>
 
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-6 py-8 space-y-8">

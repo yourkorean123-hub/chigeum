@@ -6,7 +6,7 @@ import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import { supabase } from '../../lib/supabaseClient'
 
-const LESSON_DATA = {
+export const LESSON_DATA = {
   'step1-lesson1': {
     course: '一般会話 Step 1',
     lesson: 1,
@@ -4682,7 +4682,7 @@ const LESSON_DATA = {
   },
 
   'drama-lesson2': {
-    course: 'ドラマで韓国語', lesson: 2, title: '愛の告白・恋愛表현',
+    course: 'ドラマで韓国語', lesson: 2, title: '愛の告白・恋愛表現',
     keyPhrases: [
       { kr: '나... 너 좋아해.', jp: '俺... お前のことが好きだ。', romanize: 'Na... neo joahae.' },
       { kr: '제가 좋아하는 사람이 생겼어요.', jp: '私が好きな人ができました。', romanize: 'Jega joahaneun saram i saenggyeosseoyo.' },
@@ -4862,7 +4862,7 @@ const LESSON_DATA = {
   },
 
   'drama-lesson8': {
-    course: 'ドラマで韓国語', lesson: 8, title: '食事シーンの表현',
+    course: 'ドラマで韓国語', lesson: 8, title: '食事シーンの表現',
     keyPhrases: [
       { kr: '같이 밥 먹어요.', jp: '一緒にご飯食べましょう。', romanize: 'Gachi bap meogeoyo.' },
       { kr: '맛있게 드세요!', jp: '美味しく召し上がってください！', romanize: 'Masissge deuseyo!' },
@@ -4892,7 +4892,7 @@ const LESSON_DATA = {
   },
 
   'drama-lesson9': {
-    course: 'ドラマで韓국語', lesson: 9, title: '電話・メールの표현',
+    course: 'ドラマで韓국語', lesson: 9, title: '電話・メールの表現',
     keyPhrases: [
       { kr: '여보세요? 저 ○○이에요.', jp: 'もしもし？私○○です。', romanize: 'Yeoboseyo? Jeo ○○ieyo.' },
       { kr: '지금 통화 괜찮아요?', jp: '今お電話大丈夫ですか？', romanize: 'Jigeum tonghwa gwaenchanayo?' },
@@ -5012,7 +5012,7 @@ const LESSON_DATA = {
   },
 
   'drama-lesson13': {
-    course: 'ドラマで韓国語', lesson: 13, title: '時代劇の基本표현',
+    course: 'ドラマで韓国語', lesson: 13, title: '時代劇の基本表現',
     keyPhrases: [
       { kr: '황송하옵니다.', jp: 'もったいないことでございます。', romanize: 'Hwangsongha opnida.' },
       { kr: '전하, 명심하겠사옵니다.', jp: '殿下、心に刻みます。', romanize: 'Jeonha, myeongsimhagesssapnida.' },
@@ -5042,7 +5042,7 @@ const LESSON_DATA = {
   },
 
   'drama-lesson14': {
-    course: 'ドラマで韓国語', lesson: 14, title: '医療ドラマの표현',
+    course: 'ドラマで韓国語', lesson: 14, title: '医療ドラマの表現',
     keyPhrases: [
       { kr: '응급실로 빨리 가야 해요!', jp: '救急室に早く行かないといけません！', romanize: 'Eunggeupsil ro ppalli gaya haeyo!' },
       { kr: '환자 상태가 어떠세요?', jp: '患者の状態はどうですか？', romanize: 'Hwanja sangtae ga eotteoseyo?' },
@@ -5184,6 +5184,47 @@ function SpeakButton({ text, id, speakingId, onSpeak }) {
 }
 
 export default function LessonDetail() {
+  const handlePrint = () => {
+    const esc = (t) => String(t == null ? '' : t)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const l = LESSON_DATA[lessonId]
+    if (!l) return
+    let body = ''
+    if (l.type === 'freetalk') {
+      if (l.column) body += `<h3>コラム</h3><div class="box"><p>${esc(l.column.kr)}</p><hr><p class="jp">${esc(l.column.jp)}</p></div>`
+      if (l.words) { body += '<h3>単語・表現</h3><table>'; l.words.forEach(w => { body += `<tr><td class="kr">${esc(w.kr)}</td><td>${esc(w.jp)}</td><td class="jp">${esc(w.note)}</td></tr>` }); body += '</table>' }
+      if (l.questions) { body += '<h3>自由会話</h3><table>'; l.questions.forEach((q, i) => { body += `<tr><td class="q">Q${i + 1}</td><td><div class="krp">${esc(q.kr)}</div><div class="jp">${esc(q.jp)}</div></td></tr>` }); body += '</table>' }
+    } else {
+      if (l.keyPhrases) { body += '<h3>キーフレーズ</h3><table>'; l.keyPhrases.forEach(k => { body += `<tr><td><div class="kr">${esc(k.kr)}</div>${k.romanize ? `<div class="rom">${esc(k.romanize)}</div>` : ''}<div class="jp">${esc(k.jp)}</div></td></tr>` }); body += '</table>' }
+      if (l.vocabulary) { body += '<h3>単語リスト</h3><table>'; l.vocabulary.forEach(v => { body += `<tr><td class="kr">${esc(v.kr)}</td><td>${esc(v.jp)}</td><td class="jp">${esc(v.pos)}</td></tr>` }); body += '</table>' }
+      if (l.conversation) { body += '<h3>会話</h3><table>'; l.conversation.forEach(c => { body += `<tr><td class="spk">${esc(c.speaker)}</td><td><div class="krp">${esc(c.kr)}</div><div class="jp">${esc(c.jp)}</div></td></tr>` }); body += '</table>' }
+      if (l.exercises) { body += '<h3>練習問題</h3><table>'; l.exercises.forEach((ex, i) => { body += `<tr><td class="q">Q${i + 1}</td><td><div>${esc(ex.q)}</div><div class="ans">答え：${esc(ex.a)}</div></td></tr>` }); body += '</table>' }
+      if (l.point) body += `<h3>ポイント解説</h3><div class="box"><p style="white-space:pre-line">${esc(l.point)}</p></div>`
+    }
+    const w = window.open('', '_blank')
+    w.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(l.title)}</title><style>
+      body{font-family:'Noto Sans KR','Noto Sans JP',sans-serif;color:#1f2937;font-size:14px;line-height:1.7;max-width:720px;margin:24px auto;padding:0 20px}
+      .head{border-bottom:2px solid #A32D2D;padding-bottom:8px;margin-bottom:16px}
+      .head .c{color:#A32D2D;font-weight:700;font-size:12px}
+      .head h1{color:#0C447C;font-size:22px;margin:4px 0 0}
+      h3{color:#0C447C;font-size:15px;border-left:4px solid #0C447C;padding-left:8px;margin:20px 0 8px}
+      table{width:100%;border-collapse:collapse}
+      td{vertical-align:top;padding:6px 8px 6px 0;border-bottom:1px solid #eee}
+      .kr{color:#A32D2D;font-weight:700;font-size:16px;white-space:nowrap}
+      .krp{color:#111;font-weight:700;font-size:15px}
+      .rom{color:#999;font-size:12px}.jp{color:#555;font-size:13px}
+      .q,.spk{color:#A32D2D;font-weight:700;white-space:nowrap}.spk{color:#0C447C}
+      .ans{color:#A32D2D;font-weight:700;margin-top:4px}
+      .box{border:1px solid #e8c9c9;background:#fdf6f6;border-radius:8px;padding:12px 16px}
+      .box hr{border:none;border-top:1px solid #ddd;margin:10px 0}
+      @media print{body{margin:0}@page{margin:14mm}}
+    </style></head><body>
+      <div class="head"><div class="c">${esc(l.course).replace('韓국語', '韓国語')} ／ 第${esc(l.lesson)}課</div><h1>${esc(l.title)}</h1></div>
+      ${body}
+      <script>window.onload=function(){window.print()}<\/script>
+    </body></html>`)
+    w.document.close()
+  }
   const router = useRouter()
   const { lessonId } = router.query
   const [loading, setLoading] = useState(true)
@@ -5319,6 +5360,14 @@ export default function LessonDetail() {
               {/* コンテンツ本体（free または approved のときのみ表示） */}
               {(accessStatus === 'free' || accessStatus === 'approved') && <>
 
+<div className="flex justify-end mb-4">
+                <button
+                  onClick={handlePrint}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-[#0C447C] border border-[#0C447C]/30 rounded-xl px-4 py-2 hover:bg-[#0C447C]/5 transition"
+                >
+                  🖨️ 印刷 ／ PDF保存
+                </button>
+              </div>
               <div className="flex gap-2 overflow-x-auto pb-1 mb-6">
                 {(lesson.type === 'freetalk' ? FREETALK_TABS : TABS).map(tab => (
                   <button

@@ -11,7 +11,7 @@ export default function CoachesList() {
   useEffect(() => {
     supabase
       .from('coaches')
-      .select('id, name, bio, photo_url, tags, availability_text')
+      .select('id, name, bio, photo_url, tags, availability_text, allows_phone')
       .eq('is_active', true)
       .order('display_order')
       .then(({ data }) => {
@@ -37,6 +37,13 @@ export default function CoachesList() {
                 <div className="flex-1 text-center sm:text-left">
                   <div className="font-bold text-lg text-[#0C447C]">{coach.name}</div>
                   <div className="text-sm text-gray-500 mb-2">コーチ</div>
+                  <div className="mb-2">
+                    {coach.allows_phone ? (
+                      <span className="text-[11px] bg-green-50 text-green-700 border border-green-200 font-semibold px-2 py-0.5 rounded-full">LINE通話・電話OK</span>
+                    ) : (
+                      <span className="text-[11px] bg-gray-100 text-gray-600 border border-gray-200 font-semibold px-2 py-0.5 rounded-full">LINE通話のみ</span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-700 leading-relaxed mb-3">{coach.bio}</p>
                   {coach.tags && coach.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-4 justify-center sm:justify-start">
@@ -45,7 +52,7 @@ export default function CoachesList() {
                       ))}
                     </div>
                   )}
-                  <Link href={`/coaches/${coach.id}`} className="inline-block bg-[#A32D2D] text-white text-sm font-semibold px-5 py-2 rounded-xl hover:opacity-90 transition">
+                  <Link href={`/login`} className="inline-block bg-[#A32D2D] text-white text-sm font-semibold px-5 py-2 rounded-xl hover:opacity-90 transition">
                     スケジュールを見る →
                   </Link>
                 </div>
